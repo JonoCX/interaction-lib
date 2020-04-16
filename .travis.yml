@@ -6,7 +6,7 @@ install:
   - pip install -r requirements.txt
 
 script:
-  - pytest
+  - pytest -s
 
 after_success:
   - coverage run -m pytest

@@ -84,5 +84,3 @@ class Statistics(BaseExtractor):
             return self._time_statistics
         else:
             return self._time_statistics
-        #     for user, events in self.data.items():
-

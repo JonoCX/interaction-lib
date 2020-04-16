@@ -39,8 +39,10 @@ def test_calculate_session_length_statistics(test_data, ground_truth):
     stats = Statistics(test_data, n_jobs = -1)
     res = stats.calculate_session_length_statistics()
 
+    print(res)
     # test the raw session length
     for u, s in ground_truth.items():
+        print(res[u]['raw_session_length'])
         raw_sess_len = res[u]['raw_session_length']
         
         assert s['raw_session_length'] == pytest.approx(raw_sess_len, 0.1)
