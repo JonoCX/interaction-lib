@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from distutils.core import setup
 
 name = 'interlib'
 version = 0.1
@@ -12,12 +12,9 @@ setup(
     name = name,
     version = version,
     description = description,
-    long_description = description,
     url = url,
     author = author,
-    author_email = author_email, 
-    packages = ['interlib'],
-    install_requires=[
-        'numpy', 'scipy', 'pandas', 'joblib'
-    ]
+    author_email = author_email,
+    long_description = long_description,
+    packages = ['interlib', ]
 )
