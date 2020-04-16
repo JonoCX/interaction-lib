@@ -1,12 +1,12 @@
 language: python
-python: "3.6.10"
+python: "3.6"
 
 # command to install dependencies
 install:
   - pip install -r requirements.txt
 
 script:
-  - pytest -s
+  - pytest
 
 after_success:
   - coverage run -m pytest
