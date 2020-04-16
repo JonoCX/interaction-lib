@@ -79,7 +79,7 @@ class Statistics(BaseExtractor):
 
             # calculate the raw session length from the timestamps
             for u, ts in timestamps.items():
-                self._time_statistics[u]['raw_session_length'] = _get_session_lengths(ts)
+                self._time_statistics[u].update({'raw_session_length': _get_session_lengths(ts)})
 
             return self._time_statistics
         else:
