@@ -20,19 +20,18 @@ def ground_truth():
 # Tests
 def test_init(test_data):
     with pytest.raises(ValueError):
-        s = Statistics(user_event_dict = {})
+        stats = Statistics(user_event_dict = {})
 
     with pytest.raises(TypeError):
-        s = Statistics(user_event_dict = [])
+        stats = Statistics(user_event_dict = [])
 
-    s = Statistics(test_data)
-    assert s.data == test_data
-    assert s.n_jobs == -1
-    assert isinstance(s._statistics, dict)
+    stats = Statistics(test_data)
+    assert stats.data == test_data
+    assert stats.n_jobs == -1
     
 def test_split_users(test_data):
-    s = Statistics(test_data, n_jobs = 4)
-    for i, (u_chunk, d_chunk) in enumerate(s._users_split):
+    stats = Statistics(test_data, n_jobs = 4)
+    for i, (u_chunk, d_chunk) in enumerate(stats._users_split):
         if i == 0: assert len(u_chunk) == 4
         else: assert len(u_chunk) == 3
 
@@ -45,12 +44,4 @@ def test_calculate_session_length_statistics(test_data, ground_truth):
         raw_sess_len = res[u]['raw_session_length']
         
         assert s['raw_session_length'] == pytest.approx(raw_sess_len, 0.1)
-
-    # test the raw session length
-    # for u, s in ground_truth.items():
-    #     assert s['raw_session_length'] == pytest.approx(stats._time_statistics['raw_session_lengh'][u], 0.1)
-
-    # test the hidden time
-
-
 
