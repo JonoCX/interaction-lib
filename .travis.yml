@@ -3,7 +3,7 @@ python: "3.6"
 
 # command to install dependencies
 install:
-  - cat requirements.txt | xargs -n 1 pip install
+  - pip install -r requirements.txt
 
 script:
   - pytest
