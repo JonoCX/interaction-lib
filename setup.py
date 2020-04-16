@@ -16,7 +16,7 @@ setup(
     url = url,
     author = author,
     author_email = author_email, 
-    packages = find_packages(where='interlib'),
+    packages = ['interlib'],
     install_requires=[
         'numpy', 'scipy', 'pandas', 'joblib'
     ]
