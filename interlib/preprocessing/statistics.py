@@ -24,8 +24,8 @@ class Statistics(BaseExtractor):
             n_jobs = n_jobs
         )
 
-        self._timestamps = None
-        self._session_lengths = None
+        self._statistics = {user: {} for user, d in self.data.items()}
+        self._time_statistics = {}
 
     def calculate_session_length(self, user_id = None):
         """ 
@@ -57,29 +57,32 @@ class Statistics(BaseExtractor):
             return timestamps
 
         def _get_session_lengths(timestamps):
-            session_lengths = {}
-            for u, ts in timestamps.items():
-                session_lengths[u] = (ts[-1] - ts[0]).total_seconds()
-            return session_lengths
+            return (timestamps[-1] - timestamps[0]).total_seconds()
+            # session_lengths = {}
+            # for u, ts in timestamps.items():
+            #     session_lengths[u] = (ts[-1] - ts[0]).total_seconds()
+            # return session_lengths
 
         def _calculate_hidden_time(user_chunk, data_chunk):
             user_dict = {user: [] for user in user_chunk}
             for d in data_chunk: user_dict[d['user']].append(d)
 
             return None
-        
-        parallel = Parallel(n_jobs = self._num_cpu)
-        
-        if not self._timestamps:
-            timestamps = parallel(delayed(_get_timestamps) (u, e) for u, e in self._users_split)
-            
-            self._timestamps = {}
-            for ts in timestamps:
-                self._timestamps.update(ts)
 
-        if not self._session_lengths:
-            self._session_lengths = _get_session_lengths(self._timestamps)
+        if not self._time_statistics:
+            self._time_statistics = {user: {} for user, d in self.data.items()}
+            parallel = Parallel(n_jobs = self._num_cpu)
 
-        return None
+            timestamps = {}
+            for ts in parallel(delayed(_get_timestamps) (u, e) for u, e in self._users_split):
+                timestamps.update(ts)
+
+            # calculate the raw session length from the timestamps
+            for u, ts in timestamps.items():
+                self._time_statistics[u]['raw_session_length'] = _get_session_lengths(ts)
+
+            return self._time_statistics
+        else:
+            return self._time_statistics
         #     for user, events in self.data.items():
 
