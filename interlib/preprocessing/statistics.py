@@ -105,9 +105,9 @@ class Statistics(BaseExtractor):
             :returns: the session length or 
             all session lengths as dictionary {user -> session length}
         """
-        if self._time_statistics:
-            if user_id:
-                if user_id not in self._time_statistics.keys():
+        if self._time_statistics: # if the statistics have already been written
+            if user_id: # if the request is for a single user
+                if user_id not in self._time_statistics.keys(): 
                     raise ValueError('Invalid user id (perhaps the user is not in the data)')
 
                 return self._time_statistics[user_id]['session_length']
@@ -121,3 +121,11 @@ class Statistics(BaseExtractor):
                 return self._time_statistics[user_id]['session_length']
             
             return {user: stat['session_length'] for user, stat in self._time_statistics.items()}
+
+    def calculate_pause_statistics(self, verbose = 0):
+        return None
+
+    def calculate_statistics(self, verbose = 0):
+        """ Main function for calculating the statistics: Imp last. """
+        return None
+

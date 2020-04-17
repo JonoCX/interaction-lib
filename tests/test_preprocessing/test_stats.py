@@ -105,3 +105,9 @@ def test_getting_only_session_length_one_user(test_data, ground_truth):
     # test that value error is raised if the user doesn't exist
     with pytest.raises(ValueError):
         stats.calculate_session_length(user_id = 'user_id')
+
+# ----- PAUSE STATISTICS -----
+def test_pause_statistics(test_data, ground_truth):
+    stats = Statistics(test_data)
+
+    assert stats.calculate_pause_statistics() == None
