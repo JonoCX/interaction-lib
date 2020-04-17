@@ -122,6 +122,10 @@ class Statistics(BaseExtractor):
             
             return {user: stat['session_length'] for user, stat in self._time_statistics.items()}
 
+    def _type_of_pause(self, timestamp, next_timestamp):
+        """ """
+        return 0
+
     def calculate_pause_statistics(self, verbose = 0):
         return None
 
