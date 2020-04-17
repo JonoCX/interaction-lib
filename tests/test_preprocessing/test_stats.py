@@ -1,6 +1,8 @@
 import pytest
 
 import pickle, json, datetime
+from datetime import datetime as dt 
+from datetime import timedelta
 
 from interlib.preprocessing.statistics import Statistics
 
@@ -26,7 +28,7 @@ def test_init(test_data):
         stats = Statistics(user_event_dict = [])
 
     stats = Statistics(test_data)
-    assert stats.data == test_data
+    assert stats.data.keys() == test_data.keys()
     assert stats.n_jobs == -1
     
 # ----- SPLIT USERS ------
@@ -107,7 +109,38 @@ def test_getting_only_session_length_one_user(test_data, ground_truth):
         stats.calculate_session_length(user_id = 'user_id')
 
 # ----- PAUSE STATISTICS -----
-def test_pause_statistics(test_data, ground_truth):
+def test_type_of_pause(test_data):
     stats = Statistics(test_data)
 
-    assert stats.calculate_pause_statistics() == None
+    ts = dt(2020, 1, 1, 10, 00, 00) # define a base timestamp to compare to
+
+    sp_res = stats._type_of_pause(ts, ts + timedelta(0, 3))
+    mp_res = stats._type_of_pause(ts, ts + timedelta(0, 10))
+    lp_res = stats._type_of_pause(ts, ts + timedelta(0, 20))
+    vlp_res = stats._type_of_pause(ts, ts + timedelta(0, 50))
+
+    assert sp_res[0] == 'SP' and sp_res[1] == 3.0
+    assert mp_res[0] == 'MP' and mp_res[1] == 10.0
+    assert lp_res[0] == 'LP' and lp_res[1] == 20.0
+    assert vlp_res[0] == 'VLP' and vlp_res[1] == 50.0
+
+def test_errors_type_of_pause(test_data):
+    stats = Statistics(test_data)
+
+    ts = dt(2020, 1, 1, 10, 00, 00)
+    ts_behind = dt(2020, 1, 1, 9, 00, 00)
+
+    with pytest.raises(ValueError):
+        stats._type_of_pause(None, None)
+        stats._type_of_pause(ts, ts_behind)
+
+    with pytest.raises(TypeError):
+        stats._type_of_pause(1.0, 2.0)
+
+def test_pause_statistics(test_data, ground_truth):
+    stats = Statistics(test_data)
+    res = stats.calculate_pause_statistics()
+
+    for user, stat in ground_truth.items():
+        print(user)
+        assert stat['SP'] == res[user]['SP']

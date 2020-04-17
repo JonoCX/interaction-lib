@@ -2,6 +2,8 @@
 
 from .base import BaseExtractor
 from joblib import Parallel, delayed, cpu_count
+from datetime import datetime as dt
+from collections import Counter
 
 import numpy as np 
 import pandas as pd 
@@ -24,6 +26,7 @@ class Statistics(BaseExtractor):
 
         self._statistics = {user: {} for user, d in self.data.items()}
         self._time_statistics = {}
+        self._pause_statistics = {}
 
     def calculate_time_statistics(self, verbose = 0):
         """ 
@@ -52,14 +55,16 @@ class Statistics(BaseExtractor):
 
                 hidden_times = []
                 for index, event in enumerate(events): # for all events, if there is a visibility change to hidden
-                    if event['action_name'] == 'BROWSER_VISIBILITY_CHANGE' and event['data']['romper_to_state'] == 'hidden':
+                    if (event['action_name'] == 'BROWSER_VISIBILITY_CHANGE' and 
+                        event['data']['romper_to_state'] == 'hidden'):
                         hidden_ts = event['timestamp'] # record the timestamp
 
                         if (index + 1) == len(events): break # if it's at the end, exit
 
                         visible_ts = None
                         for f_index, f_event in enumerate(events[index:]): # otherwise, loop forward in the event to find next BVC
-                            if f_event['action_name'] == 'BROWSER_VISIBILITY_CHANGE' and f_event['data']['romper_to_state'] == 'visible':
+                            if (f_event['action_name'] == 'BROWSER_VISIBILITY_CHANGE' and 
+                                f_event['data']['romper_to_state'] == 'visible'):
                                 visible_ts = f_event['timestamp']
                                 break
 
@@ -124,10 +129,77 @@ class Statistics(BaseExtractor):
 
     def _type_of_pause(self, timestamp, next_timestamp):
         """ """
-        return 0
+        if timestamp is None or next_timestamp is None:
+            raise ValueError('Both timestamp parameters have to be initialised')
+        
+        if not isinstance(timestamp, dt) or not isinstance(next_timestamp, dt):
+            raise TypeError('Timestamps is not a datetime object')
 
+        if next_timestamp < timestamp:
+            raise ValueError('Next timestamp cannot be before current timestamps')
+
+        diff = (next_timestamp - timestamp).total_seconds()
+        
+        if 1 <= diff <= 5: return 'SP', diff # 1 -> 5
+        elif 5 < diff <= 15: return 'MP', diff # 6 -> 15
+        elif 15 < diff <= 30: return 'LP', diff # 16 -> 30
+        elif diff > 30: return 'VLP', diff # more than 30
+        else: return 0, diff # base case
+        
     def calculate_pause_statistics(self, verbose = 0):
-        return None
+        """ """
+        def _get_pauses(user_chunk, data_chunk):
+            user_dict = {user: [] for user in user_chunk}
+            for d in data_chunk: user_dict[d['user']].append(d)
+
+            results = {user: {} for user in user_chunk}
+
+            for user, events in user_dict.items():
+                if len(events) < 1: # if the user has no events, track them and update the results
+                    results[user].update({'SP': 0, 'MP': 0, 'LP': 0, 'VLP': 0})
+                    continue
+
+                pauses = []
+                previous_timestamp = None
+                for event in events:
+                    # we only count pauses between user events, ignored variable setting and link choices
+                    if (event['action_type'] == 'USER_ACTION' and 
+                        event['action_name'] != 'USER_SET_VARIABLE' and 
+                        event['action_type'] != 'LINK_CHOICE_CLICKED'):
+                        if previous_timestamp is None:
+                            previous_timestamp = event['timestamp'] # no previous, first iteration
+                        
+                        # get the type of pause
+                        pause_type, diff = self._type_of_pause(previous_timestamp, event['timestamp'])
+
+                        if pause_type != 0: # there is a pause
+                            pauses.append(pause_type)
+
+                        previous_timestamp = event['timestamp'] # update to the current
+                
+                pauses = Counter(pauses)
+                results[user].update({
+                    'SP': pauses['SP'], 'MP': pauses['MP'], 'LP': pauses['LP'],
+                    'VLP': pauses['VLP']
+                })
+            
+            return results
+
+        if not self._pause_statistics:
+            self._pause_statistics = {user: {} for user, d in self.data.items()}
+            parallel = Parallel(n_jobs = self._num_cpu, verbose = verbose)
+
+            # run the pause statistics job in parallel
+            res = parallel(delayed(_get_pauses) (u, e) for u, e in self._users_split)
+
+            # unpack the results and add to the pause statistics dictionary
+            for r in res:
+                for u, p in r.items():
+                    self._pause_statistics[u].update(p)
+
+            return self._pause_statistics
+        else:
+            return self._pause_statistics
 
     def calculate_statistics(self, verbose = 0):
         """ Main function for calculating the statistics: Imp last. """

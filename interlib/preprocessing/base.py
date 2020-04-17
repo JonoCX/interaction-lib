@@ -6,7 +6,7 @@ class BaseExtractor():
     """ Base class for all of the extractors """
     
     def __init__(self, user_event_dict, n_jobs = -1):
-        self.data = user_event_dict
+        self.data = self._sort_events(user_event_dict)
         self.n_jobs = n_jobs
 
         if self.n_jobs == -1: self._num_cpu = cpu_count()
@@ -14,6 +14,12 @@ class BaseExtractor():
 
         self._users = set(self.data.keys())
         self._users_split = self.split_users()
+
+    def _sort_events(self, user_event_dict):
+        data = {}
+        for user, events in user_event_dict.items():
+            data[user] = sorted(events, key = lambda x: x['timestamp'])
+        return data
 
     def split_users(self):
         """ """
