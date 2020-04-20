@@ -159,3 +159,36 @@ def test_empty_pauses_statistics(test_data):
     assert res[user_to_delete]['MP'] == 0
     assert res[user_to_delete]['LP'] == 0
     assert res[user_to_delete]['VLP'] == 0
+
+def test_pauses_single_user(test_data, ground_truth):
+    stats = Statistics(test_data)
+    user = '959c1a91-8b0f-4178-bc59-70499353204f'
+    
+    result = stats.calculate_pause_statistics(user_id = user)
+
+    assert result[user]['SP'] == ground_truth[user]['SP']
+    assert result[user]['MP'] == ground_truth[user]['MP']
+    assert result[user]['LP'] == ground_truth[user]['LP']
+    assert result[user]['VLP'] == ground_truth[user]['VLP']
+
+def test_pauses_single_user_errors(test_data):
+    stats = Statistics(test_data)
+
+    # test value error when pause statistics haven't already been calculated
+    with pytest.raises(ValueError):
+        stats.calculate_pause_statistics(user_id = '150b')
+    
+    # test type error when something other than a string is passed
+    with pytest.raises(TypeError):
+        stats.calculate_pause_statistics(user_id = 150)
+    
+    # calculate statistics to test errors in retrieval 
+    res = stats.calculate_pause_statistics()
+
+    # test value error for when the user isn't in the stats or data
+    with pytest.raises(ValueError):
+        stats.calculate_pause_statistics(user_id = '150b')
+    
+    # test type error
+    with pytest.raises(TypeError):
+        stats.calculate_pause_statistics(user_id = 150)

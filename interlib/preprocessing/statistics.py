@@ -146,7 +146,7 @@ class Statistics(BaseExtractor):
         elif diff > 30: return 'VLP', diff # more than 30
         else: return 0, diff # base case
         
-    def calculate_pause_statistics(self, verbose = 0):
+    def calculate_pause_statistics(self, verbose = 0, user_id = None):
         """ """
         def _get_pauses(user_chunk, data_chunk):
             user_dict = {user: [] for user in user_chunk}
@@ -186,6 +186,15 @@ class Statistics(BaseExtractor):
             return results
 
         if not self._pause_statistics:
+            if user_id is not None:
+                if not isinstance(user_id, str):
+                    raise TypeError('User Id should be a string: {0}'.format(user_id))
+
+                if user_id not in self.data.keys():
+                    raise ValueError('Invalid user id: {0}'.format(user_id))
+                
+                return _get_pauses(user_chunk = [user_id], data_chunk = self.data[user_id])
+
             self._pause_statistics = {user: {} for user, d in self.data.items()}
             parallel = Parallel(n_jobs = self._num_cpu, verbose = verbose)
 
@@ -199,7 +208,16 @@ class Statistics(BaseExtractor):
 
             return self._pause_statistics
         else:
+            if user_id is not None:
+                if not isinstance(user_id, str):
+                    raise TypeError('User Id should be a string: {0}'.format(user_id))
+                
+                if user_id not in self._pause_statistics.keys() or user_id not in self.data.keys():
+                    raise ValueError('Invalid user id: {0}'.format(user_id))
+
+                return self._pause_statistics[user_id]
             return self._pause_statistics
+
 
     def calculate_statistics(self, verbose = 0):
         """ Main function for calculating the statistics: Imp last. """
