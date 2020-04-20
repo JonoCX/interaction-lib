@@ -142,5 +142,20 @@ def test_pause_statistics(test_data, ground_truth):
     res = stats.calculate_pause_statistics()
 
     for user, stat in ground_truth.items():
-        print(user)
-        assert stat['SP'] == res[user]['SP']
+        assert res[user]['SP'] == stat['SP']
+        assert res[user]['MP'] == stat['MP']
+        assert res[user]['LP'] == stat['LP']
+        assert res[user]['VLP'] == stat['VLP']
+
+def test_empty_pauses_statistics(test_data):
+    test_data_copy = test_data.copy()
+    user_to_delete = list(test_data_copy.keys())[0]
+    test_data_copy[user_to_delete] = [] # remove their events
+
+    stats = Statistics(test_data_copy)
+    res = stats.calculate_pause_statistics()
+
+    assert res[user_to_delete]['SP'] == 0
+    assert res[user_to_delete]['MP'] == 0
+    assert res[user_to_delete]['LP'] == 0
+    assert res[user_to_delete]['VLP'] == 0

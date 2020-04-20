@@ -165,13 +165,13 @@ class Statistics(BaseExtractor):
                     # we only count pauses between user events, ignored variable setting and link choices
                     if (event['action_type'] == 'USER_ACTION' and 
                         event['action_name'] != 'USER_SET_VARIABLE' and 
-                        event['action_type'] != 'LINK_CHOICE_CLICKED'):
+                        event['action_name'] != 'LINK_CHOICE_CLICKED'):
                         if previous_timestamp is None:
                             previous_timestamp = event['timestamp'] # no previous, first iteration
                         
                         # get the type of pause
                         pause_type, diff = self._type_of_pause(previous_timestamp, event['timestamp'])
-
+                       
                         if pause_type != 0: # there is a pause
                             pauses.append(pause_type)
 
