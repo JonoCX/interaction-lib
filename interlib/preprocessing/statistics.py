@@ -3,7 +3,7 @@
 from .base import BaseExtractor
 from joblib import Parallel, delayed, cpu_count
 from datetime import datetime as dt
-from collections import Counter
+from collections import Counter, defaultdict
 
 import numpy as np 
 import pandas as pd 
@@ -28,7 +28,7 @@ class Statistics(BaseExtractor):
         self._time_statistics = {}
         self._pause_statistics = {}
 
-    def calculate_time_statistics(self, verbose = 0):
+    def calculate_time_statistics(self, verbose = 0, user_id = None):
         """ 
             Using the user event data, calculate the hidden time, raw
             session length, and session length of the users.
@@ -54,7 +54,8 @@ class Statistics(BaseExtractor):
                 timestamps[user] = [event['timestamp'] for event in events] # collect timestamps
 
                 hidden_times = []
-                for index, event in enumerate(events): # for all events, if there is a visibility change to hidden
+                # for all events, if there is a visibility change to hidden
+                for index, event in enumerate(events): 
                     if (event['action_name'] == 'BROWSER_VISIBILITY_CHANGE' and 
                         event['data']['romper_to_state'] == 'hidden'):
                         hidden_ts = event['timestamp'] # record the timestamp
@@ -62,11 +63,15 @@ class Statistics(BaseExtractor):
                         if (index + 1) == len(events): break # if it's at the end, exit
 
                         visible_ts = None
-                        for f_index, f_event in enumerate(events[index:]): # otherwise, loop forward in the event to find next BVC
-                            if (f_event['action_name'] == 'BROWSER_VISIBILITY_CHANGE' and 
-                                f_event['data']['romper_to_state'] == 'visible'):
-                                visible_ts = f_event['timestamp']
-                                break
+                        if (events[index + 1]['action_name'] == 'BROWSER_VISIBILITY_CHANGE' and
+                            events[index + 1]['data']['romper_to_state'] == 'visible'):
+                            visible_ts = events[index + 1]['timestamp']
+                        else: # otherwise, loop forward in the event to find next BVC
+                            for f_index, f_event in enumerate(events[index:]): 
+                                if (f_event['action_name'] == 'BROWSER_VISIBILITY_CHANGE' and 
+                                    f_event['data']['romper_to_state'] == 'visible'):
+                                    visible_ts = f_event['timestamp']
+                                    break
 
                         if visible_ts: # if found, calculate the difference
                             hidden_times.append((visible_ts - hidden_ts).total_seconds())
@@ -85,7 +90,17 @@ class Statistics(BaseExtractor):
 
             return results
 
-        if not self._time_statistics: # we've not already calculated or we're being forced to do so
+        if not self._time_statistics: # we've not already calculated
+            if user_id is not None: # if the user is wanting a specific user
+                if not isinstance(user_id, str):
+                    raise TypeError('User ID should be a String: {0}'.format(user_id))
+                
+                if user_id not in self.data.keys():
+                    raise ValueError('Invalid User ID: {0}'.format(user_id))
+
+                # calculate the statistics for that user
+                return _get_stats(user_chunk = [user_id], data_chunk = self.data[user_id])
+
             self._time_statistics = {user: {} for user, d in self.data.items()}
             parallel = Parallel(n_jobs = self._num_cpu, verbose = verbose)
 
@@ -99,6 +114,15 @@ class Statistics(BaseExtractor):
                 
             return self._time_statistics
         else: # otherwise just return the pre-calculate statistics
+            if user_id is not None: # if the user is wanting a specific user
+                if not isinstance(user_id, str):
+                    raise TypeError('User ID should be a string: {0}'.format(user_id))
+            
+                if user_id not in self._time_statistics.keys() or user_id not in self.data.keys():
+                    raise ValueError('Invalid User ID: {0}'.format(user_id))
+                
+                # retrieve the statistics for that user.
+                return self._time_statistics[user_id]
             return self._time_statistics
 
     def calculate_session_length(self, user_id = None, verbose = 0):
@@ -185,14 +209,16 @@ class Statistics(BaseExtractor):
             
             return results
 
+        # if the statistics haven't been previously calculated
         if not self._pause_statistics:
-            if user_id is not None:
+            if user_id is not None: # if the user is asking for the stats of a specific user
                 if not isinstance(user_id, str):
                     raise TypeError('User Id should be a string: {0}'.format(user_id))
 
                 if user_id not in self.data.keys():
                     raise ValueError('Invalid user id: {0}'.format(user_id))
                 
+                # calculate the pause statistics for that individual (non-parallel)
                 return _get_pauses(user_chunk = [user_id], data_chunk = self.data[user_id])
 
             self._pause_statistics = {user: {} for user, d in self.data.items()}
@@ -211,13 +237,12 @@ class Statistics(BaseExtractor):
             if user_id is not None:
                 if not isinstance(user_id, str):
                     raise TypeError('User Id should be a string: {0}'.format(user_id))
-                
+
                 if user_id not in self._pause_statistics.keys() or user_id not in self.data.keys():
                     raise ValueError('Invalid user id: {0}'.format(user_id))
 
                 return self._pause_statistics[user_id]
             return self._pause_statistics
-
 
     def calculate_statistics(self, verbose = 0):
         """ Main function for calculating the statistics: Imp last. """

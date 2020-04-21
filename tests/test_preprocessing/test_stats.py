@@ -192,3 +192,5 @@ def test_pauses_single_user_errors(test_data):
     # test type error
     with pytest.raises(TypeError):
         stats.calculate_pause_statistics(user_id = 150)
+
+# ----- EVENT STATISTICS -----
