@@ -211,6 +211,63 @@ def test_event_statistics(test_data, ground_truth, interaction_events):
     stats = Statistics(test_data)
     res = stats.calculate_event_statistics(interaction_events)
 
+    # assert that the ground truth statistics are the same
     for user, stat in ground_truth.items():
         for event in interaction_events:
             assert res[user][event] == stat[event]
+
+def test_include_lcc_and_usv(test_data, ground_truth, interaction_events):
+    stats = Statistics(test_data)
+
+    # add in the lcc and usv counts into the total events
+    for user, stat in ground_truth.copy().items():
+        ground_truth[user]['total_events'] += ground_truth[user]['LINK_CHOICE_CLICKED']
+        ground_truth[user]['total_events'] += ground_truth[user]['USER_SET_VARIABLE']
+
+    res = stats.calculate_event_statistics(
+        interaction_events, include_link_choices = True, include_user_set_variables = True
+    )
+
+    assert len(res.keys()) == len(ground_truth.keys())
+
+    # test that the stat's still match when LCC and USV are included in the total count
+    for user, stat in ground_truth.items():
+        for event in interaction_events:
+            assert res[user][event] == stat[event]
+
+def test_event_statistics_single_user(test_data, ground_truth, interaction_events):
+    stats = Statistics(test_data)
+    user = '959c1a91-8b0f-4178-bc59-70499353204f'
+
+    # test that the stats are calculated for a single user and that they're correct
+    res = stats.calculate_event_statistics(interaction_events, user_id = user)
+
+    # test that a single user (and the right one) is returned
+    assert len(res.keys()) == 1 and user in set(res.keys())
+
+    # test that each stat is correct
+    for u, stat in ground_truth.items():
+        if u == user:
+            for event in interaction_events:
+                assert res[user][event] == stat[event]
+
+    res = Statistics(test_data).calculate_event_statistics(
+        interaction_events, include_link_choices = True, 
+        include_user_set_variables = True, user_id = user
+    )
+
+    # test that a single user is still returned
+    assert len(res.keys()) == 1 and user in set(res.keys())
+
+    # add in the lcc and usv counts into the total events
+    ground_truth[user]['total_events'] += ground_truth[user]['LINK_CHOICE_CLICKED']
+    ground_truth[user]['total_events'] += ground_truth[user]['USER_SET_VARIABLE']
+
+    # test that each stat is correct
+    for u, stat in ground_truth.items():
+        if u == user:
+            for event in interaction_events:
+                assert res[user][event] == stat[event]
+
+def test_event_statistics_errors():
+    pass
