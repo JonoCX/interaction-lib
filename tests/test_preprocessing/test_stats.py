@@ -269,5 +269,33 @@ def test_event_statistics_single_user(test_data, ground_truth, interaction_event
             for event in interaction_events:
                 assert res[user][event] == stat[event]
 
-def test_event_statistics_errors():
-    pass
+def test_event_statistics_errors(test_data, ground_truth, interaction_events):
+    stats = Statistics(test_data)
+
+    # test type error is thrown when a non-set object is pass for 
+    # the interaction events
+    with pytest.raises(TypeError):
+        stats.calculate_event_statistics(interaction_events = [])
+
+    # test that value error is thrown when an empty set is passed
+    with pytest.raises(ValueError):
+        stats.calculate_event_statistics(interaction_events = set([]))
+
+    # test that a type error is thrown when a non-string user_id is passed
+    with pytest.raises(TypeError):
+        stats.calculate_event_statistics(interaction_events, user_id = 150)
+
+    # test that a value error is thrown when user_id is not in data
+    with pytest.raises(ValueError):
+        stats.calculate_event_statistics(interaction_events, user_id = '150b')
+
+    # calculate the statistics to test for retrieval errors
+    res = stats.calculate_event_statistics(interaction_events)
+
+    # test that a type error is thrown when user_id is not a string
+    with pytest.raises(TypeError):
+        stats.calculate_event_statistics(interaction_events, user_id = 150)
+
+    # test that a value error is thrown when user_id is not in the data
+    with pytest.raises(ValueError):
+        stats.calculate_event_statistics(interaction_events, user_id = '150b')

@@ -304,9 +304,13 @@ class Statistics(BaseExtractor):
                     
             return results 
 
-        # check that the event mapping is a set
+        # check that the interaction events is a set
         if not isinstance(interaction_events, set):
-            raise TypeError('Event mapping should be a set of actions: {0}'.format(interaction_events))
+            raise TypeError('Interaction events should be a set of actions: {0}'.format(interaction_events))
+    
+        # check that the interaction events set contains something
+        if len(interaction_events) == 0:
+            raise ValueError('Interaction events cannot be empty: {0}'.format(interaction_events))
 
         if not self._event_statistics:
             if user_id is not None: # if a specific user is requested
