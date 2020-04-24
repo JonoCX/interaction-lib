@@ -19,6 +19,19 @@ def ground_truth():
         data = json.load(data_in)
     return data
 
+@pytest.fixture
+def interaction_events():
+    return { # set of user actions we consider
+        'PLAY_PAUSE_BUTTON_CLICKED', 'BACK_BUTTON_CLICKED', 
+        'FULLSCREEN_BUTTON_CLICKED','NEXT_BUTTON_CLICKED', 
+        'SUBTITLES_BUTTON_CLICKED', 'VOLUME_CHANGE',
+        'VIDEO_SCRUBBED', 'SEEK_BACKWARD_BUTTON_CLICKED', 
+        'SEEK_FORWARD_BUTTON_CLICKED', 'VOLUME_MUTE_TOGGLED', 
+        'VARIABLE_PANEL_NEXT_CLICKED', 'VARIABLE_PANEL_BACK_CLICKED',
+        'BROWSER_VISIBILITY_CHANGE', 'WINDOW_ORIENTATION_CHANGE',
+        'NARRATIVE_ELEMENT_CHANGE'
+    }
+
 # ------ INIT ------
 def test_init(test_data):
     with pytest.raises(ValueError):
@@ -194,3 +207,10 @@ def test_pauses_single_user_errors(test_data):
         stats.calculate_pause_statistics(user_id = 150)
 
 # ----- EVENT STATISTICS -----
+def test_event_statistics(test_data, ground_truth, interaction_events):
+    stats = Statistics(test_data)
+    res = stats.calculate_event_statistics(interaction_events)
+
+    for user, stat in ground_truth.items():
+        for event in interaction_events:
+            assert res[user][event] == stat[event]

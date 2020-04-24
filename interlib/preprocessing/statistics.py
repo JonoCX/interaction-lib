@@ -27,6 +27,7 @@ class Statistics(BaseExtractor):
         self._statistics = {user: {} for user, d in self.data.items()}
         self._time_statistics = {}
         self._pause_statistics = {}
+        self._event_statistics = {}
 
     def calculate_time_statistics(self, verbose = 0, user_id = None):
         """ 
@@ -48,7 +49,9 @@ class Statistics(BaseExtractor):
             for user, events in user_dict.items():
                 if len(events) < 1: # if there are no events
                     no_events_set.add(user) # essentially set a flag per user
-                    results[user].update({'hidden_time': 0.0, 'raw_session_length': 0.0}) # set hidden time/raw to 0.0
+                    
+                    # set hidden time/raw to 0.0
+                    results[user].update({'hidden_time': 0.0, 'raw_session_length': 0.0}) 
                     continue # move onto the next user
 
                 timestamps[user] = [event['timestamp'] for event in events] # collect timestamps
@@ -179,14 +182,15 @@ class Statistics(BaseExtractor):
             results = {user: {} for user in user_chunk}
 
             for user, events in user_dict.items():
-                if len(events) < 1: # if the user has no events, track them and update the results
+                if len(events) < 1: # if the user has no events
                     results[user].update({'SP': 0, 'MP': 0, 'LP': 0, 'VLP': 0})
                     continue
 
                 pauses = []
                 previous_timestamp = None
                 for event in events:
-                    # we only count pauses between user events, ignored variable setting and link choices
+                    # we only count pauses between user events, ignored variable 
+                    # setting and link choices
                     if (event['action_type'] == 'USER_ACTION' and 
                         event['action_name'] != 'USER_SET_VARIABLE' and 
                         event['action_name'] != 'LINK_CHOICE_CLICKED'):
@@ -244,6 +248,100 @@ class Statistics(BaseExtractor):
                 return self._pause_statistics[user_id]
             return self._pause_statistics
 
+    def calculate_event_statistics(
+        self,
+        interaction_events,
+        include_link_choices = False,
+        include_user_set_variables = False,
+        verbose = 0,
+        user_id = None):
+        """ 
+        
+        :params event_mapping: all of the events that should be counted
+        :params include_link_choices: whether to include LC in the total count
+        :params include_user_set_variable: whether to include USV in the total count
+        :params verbose: the level of output passed to the joblib backend
+        :params user_id: the specific user to fetch statistics on
+        :returns: event-based statistics (dictionary)
+        """
+        def _event_stats(user_chunk, data_chunk):
+            user_dict = {user: [] for user in user_chunk}
+            for d in data_chunk: user_dict[d['user']].append(d)
+
+            results = {user: {} for user in user_chunk}
+
+            for user, events in user_dict.items():
+                if len(events) < 1: # if the user has no events
+                    results[user].update({ev: 0 for ev in interaction_events})
+                    continue
+
+                lcc_count, usv_count = 0, 0 # link choices, user set variable
+                ua_counter = defaultdict(int) # counter for all events
+
+                # set the default for each of the events
+                for event in interaction_events: ua_counter[event] = 0
+
+                for event in events:
+                    if event['action_name'] in interaction_events:
+                        ua_counter[event['action_name']] += 1
+                
+                # subtract one from PLAY_PAUSE, there's always one at the beginning and
+                # only if the value is not 0
+                if ua_counter['PLAY_PAUSE_BUTTON_CLICKED'] != 0:
+                    ua_counter['PLAY_PAUSE_BUTTON_CLICKED'] -= 1
+
+                # calculate the total number of events
+                total_events = sum(ua_counter.values())
+
+                if not include_link_choices:
+                    total_events -= ua_counter['LINK_CHOICE_CLICKED']
+                
+                if not include_user_set_variables:
+                    total_events -= ua_counter['USER_SET_VARIABLE']
+
+                results[user].update(dict(ua_counter))
+                results[user].update({'total_events': total_events})
+                    
+            return results 
+
+        # check that the event mapping is a set
+        if not isinstance(interaction_events, set):
+            raise TypeError('Event mapping should be a set of actions: {0}'.format(interaction_events))
+
+        if not self._event_statistics:
+            if user_id is not None: # if a specific user is requested
+                if not isinstance(user_id, str):
+                    raise TypeError('User ID should be a string: {0}'.format(user_id))
+            
+                if user_id not in self.data.keys():
+                    raise ValueError('Invalid user ID: {0}'.format(user_id))
+
+                # calculate the event statistics for that user
+                return _event_stats(user_chunk = [user_id], data_chunk = self.data[user_id])
+            
+            self._event_statistics = {user: {} for user, d in self.data.items()}
+            parallel = Parallel(n_jobs = self._num_cpu, verbose = verbose)
+
+            # run the event extract in parallel
+            results = parallel(delayed(_event_stats) (u, e) for u, e in self._users_split)
+
+            # unpack the results and add to the event statistics dictionary
+            for res in results:
+                for user, event_stats in res.items():
+                    self._event_statistics[user].update(event_stats)
+
+            return self._event_statistics
+        else:
+            if user_id is not None: # if a specific user is requested
+                if not isinstance(user_id, str):
+                    raise TypeError('User ID should be a string: {0}'.format(user_id))
+            
+                if user_id not in self.data.keys():
+                    raise ValueError('Invalid user ID: {0}'.format(user_id))
+
+                return self._event_statistics[user_id]
+            return self._event_statistics
+            
     def calculate_statistics(self, verbose = 0):
         """ Main function for calculating the statistics: Imp last. """
         return None
