@@ -349,4 +349,49 @@ def test_overall_statistics_single_user_without_lcc_usv(test_data, ground_truth,
         else:
             assert gt_individual[stat] == value
         
+def test_overall_statistics_errors(test_data, ground_truth, interaction_events):
+    stats = Statistics(test_data)
 
+    # test that a type error is throw for passing a non-set interaction_events
+    with pytest.raises(TypeError):
+        stats.calculate_statistics(interaction_events = [])
+
+    # test that a value error is thrown when passing an empty set
+    with pytest.raises(ValueError):
+        stats.calculate_statistics(interaction_events = set([]))
+
+    # test that a type error is thrown when a set not containing strings is passed
+    with pytest.raises(TypeError):
+        stats.calculate_statistics(interaction_events = set([1, 2, 3, 4]))
+
+    # if stats hasn't be calculated, test that TypeError is thrown when
+    # a non-string user_id is passed
+    with pytest.raises(TypeError):
+        stats.calculate_statistics(
+            interaction_events = interaction_events,
+            user_id = 150
+        )
+
+    # if stats hasn't been calculated, test that a ValueError is thrown
+    # when an invalid user_id is passed.
+    with pytest.raises(ValueError):
+        stats.calculate_statistics(
+            interaction_events = interaction_events,
+            user_id = '150b'
+        )
+
+    stats.calculate_statistics(interaction_events)
+
+    # test the same two previous errors now the stats have been
+    # calculated.
+    with pytest.raises(TypeError):
+        stats.calculate_statistics(
+            interaction_events = interaction_events,
+            user_id = 150
+        )
+
+    with pytest.raises(ValueError):
+        stats.calculate_statistics(
+            interaction_events = interaction_events,
+            user_id = '150b'
+        )

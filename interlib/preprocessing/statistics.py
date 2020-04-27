@@ -357,12 +357,15 @@ class Statistics(BaseExtractor):
         # check that the interaction events is a set
         if not isinstance(interaction_events, set):
             raise TypeError('Interaction events should be a set of actions: {0} ({1})'.format(
-                interaction_events, type(interaction_events)
-                )
+                interaction_events, type(interaction_events))
             )
 
         if len(interaction_events) == 0:
             raise ValueError('Interaction events cannot be empty: {0}'.format(interaction_events))
+
+        # test that the values in a set are of type string, the process won't work with int/float
+        if not all(isinstance(x, str) for x in interaction_events):
+            raise TypeError('Contents of interaction_events is not string')
         
         if not self._statistics: # haven't been previously calculated
             if user_id is not None: # if statistics for a single user is requested
@@ -395,7 +398,7 @@ class Statistics(BaseExtractor):
                 interaction_events = interaction_events,
                 include_link_choices = include_link_choices,
                 include_user_set_variables = include_user_set_variables,
-                verbose = 0
+                verbose = verbose
             )
 
             self._statistics = { # build up the statistics dictionary
@@ -409,9 +412,9 @@ class Statistics(BaseExtractor):
             }
 
             return self._statistics
-        else:
-            if user_id is not None:
-                if not isinstance(user_id, str):
+        else: # else, the statistics have been previously calculated
+            if user_id is not None: # if it's for a specific user
+                if not isinstance(user_id, str): 
                     raise TypeError('User ID should be a string: {0} ({1})'.format(user_id, type(user_id)))
             
                 if user_id not in self.data.keys():
