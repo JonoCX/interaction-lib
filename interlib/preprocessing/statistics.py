@@ -24,7 +24,7 @@ class Statistics(BaseExtractor):
             n_jobs = n_jobs
         )
 
-        self._statistics = {user: {} for user, d in self.data.items()}
+        self._statistics = {}
         self._time_statistics = {}
         self._pause_statistics = {}
         self._event_statistics = {}
@@ -346,7 +346,32 @@ class Statistics(BaseExtractor):
                 return self._event_statistics[user_id]
             return self._event_statistics
             
-    def calculate_statistics(self, verbose = 0):
+    def calculate_statistics(
+        self, 
+        interaction_events,
+        user_id = None,
+        include_link_choices = False,
+        include_user_set_variables = False,
+        verbose = 0):
         """ Main function for calculating the statistics: Imp last. """
-        return None
+
+        # input checks, for errors etc.
+
+        # get the results one at a time, update the main stats dictionary
+        
+        if not self._statistics: # haven't been previously calculated
+            self._statistics = {user: {} for user, d in self.data.items()}
+
+            # update with the time statistics
+            self._statistics.update(self.calculate_time_statistics())
+
+            # update with the pause statistics
+            self._statistics.update(self.calculate_pause_statistics())
+
+            # update with the event statistics
+            self._statistics.update(self.calculate_event_statistics(interaction_events))
+
+            return self._statistics
+        else:
+            return self._statistics
 

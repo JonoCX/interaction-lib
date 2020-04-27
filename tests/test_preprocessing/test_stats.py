@@ -299,3 +299,12 @@ def test_event_statistics_errors(test_data, ground_truth, interaction_events):
     # test that a value error is thrown when user_id is not in the data
     with pytest.raises(ValueError):
         stats.calculate_event_statistics(interaction_events, user_id = '150b')
+
+# ------ OVERALL STATISTICS ------
+def test_overall_statistics(test_data, ground_truth, interaction_events):
+    stats = Statistics(test_data)
+    res = stats.calculate_statistics(interaction_events, verbose = 2)
+
+    for user, stat in ground_truth.items():
+        for s, value in stat.items():
+            assert value == ground_truth[user][s]
