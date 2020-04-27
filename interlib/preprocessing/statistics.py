@@ -102,7 +102,7 @@ class Statistics(BaseExtractor):
                     raise ValueError('Invalid User ID: {0}'.format(user_id))
 
                 # calculate the statistics for that user
-                return _get_stats(user_chunk = [user_id], data_chunk = self.data[user_id])
+                return _get_stats(user_chunk = [user_id], data_chunk = self.data[user_id])[user_id]
 
             self._time_statistics = {user: {} for user, d in self.data.items()}
             parallel = Parallel(n_jobs = self._num_cpu, verbose = verbose)
@@ -223,7 +223,7 @@ class Statistics(BaseExtractor):
                     raise ValueError('Invalid user id: {0}'.format(user_id))
                 
                 # calculate the pause statistics for that individual (non-parallel)
-                return _get_pauses(user_chunk = [user_id], data_chunk = self.data[user_id])
+                return _get_pauses(user_chunk = [user_id], data_chunk = self.data[user_id])[user_id]
 
             self._pause_statistics = {user: {} for user, d in self.data.items()}
             parallel = Parallel(n_jobs = self._num_cpu, verbose = verbose)
@@ -275,7 +275,6 @@ class Statistics(BaseExtractor):
                     results[user].update({ev: 0 for ev in interaction_events})
                     continue
 
-                lcc_count, usv_count = 0, 0 # link choices, user set variable
                 ua_counter = defaultdict(int) # counter for all events
 
                 # set the default for each of the events
@@ -321,7 +320,7 @@ class Statistics(BaseExtractor):
                     raise ValueError('Invalid user ID: {0}'.format(user_id))
 
                 # calculate the event statistics for that user
-                return _event_stats(user_chunk = [user_id], data_chunk = self.data[user_id])
+                return _event_stats(user_chunk = [user_id], data_chunk = self.data[user_id])[user_id]
             
             self._event_statistics = {user: {} for user, d in self.data.items()}
             parallel = Parallel(n_jobs = self._num_cpu, verbose = verbose)
@@ -355,23 +354,70 @@ class Statistics(BaseExtractor):
         verbose = 0):
         """ Main function for calculating the statistics: Imp last. """
 
-        # input checks, for errors etc.
+        # check that the interaction events is a set
+        if not isinstance(interaction_events, set):
+            raise TypeError('Interaction events should be a set of actions: {0} ({1})'.format(
+                interaction_events, type(interaction_events)
+                )
+            )
 
-        # get the results one at a time, update the main stats dictionary
+        if len(interaction_events) == 0:
+            raise ValueError('Interaction events cannot be empty: {0}'.format(interaction_events))
         
         if not self._statistics: # haven't been previously calculated
-            self._statistics = {user: {} for user, d in self.data.items()}
+            if user_id is not None: # if statistics for a single user is requested
+                if not isinstance(user_id, str):
+                    raise TypeError('User ID should be a string: {0} ({1})'.format(user_id, type(user_id)))
 
-            # update with the time statistics
-            self._statistics.update(self.calculate_time_statistics())
+                if user_id not in self.data.keys():
+                    raise ValueError('Invalid User ID: {0} ({1})'.format(user_id, type(user_id)))
 
-            # update with the pause statistics
-            self._statistics.update(self.calculate_pause_statistics())
+                # return a dict of results = {total_events: 24, pp: 1, etc..}
+                individual_results = {
+                    **self.calculate_time_statistics(user_id = user_id, verbose = verbose),
+                    **self.calculate_pause_statistics(user_id = user_id, verbose = verbose),
+                    **self.calculate_event_statistics(
+                        interaction_events, user_id = user_id,
+                        include_link_choices = include_link_choices,
+                        include_user_set_variables = include_user_set_variables, 
+                        verbose = verbose
+                    )
+                }
+                
+                return individual_results
 
-            # update with the event statistics
-            self._statistics.update(self.calculate_event_statistics(interaction_events))
+            # ---- The below may not be the most optimal approach -----
+
+            # calculate all of the statistics
+            self.calculate_time_statistics(verbose = verbose)
+            self.calculate_pause_statistics(verbose = verbose)
+            self.calculate_event_statistics(
+                interaction_events = interaction_events,
+                include_link_choices = include_link_choices,
+                include_user_set_variables = include_user_set_variables,
+                verbose = 0
+            )
+
+            self._statistics = { # build up the statistics dictionary
+                user: { # for each of the users, get their statistics (O(1))
+                    **self.calculate_time_statistics(user_id = user), 
+                    **self.calculate_pause_statistics(user_id = user),
+                    **self.calculate_event_statistics(
+                        user_id = user, interaction_events = interaction_events
+                    )
+                } for user, d in self.data.items()
+            }
 
             return self._statistics
         else:
+            if user_id is not None:
+                if not isinstance(user_id, str):
+                    raise TypeError('User ID should be a string: {0} ({1})'.format(user_id, type(user_id)))
+            
+                if user_id not in self.data.keys():
+                    raise ValueError('Invalid User ID: {0} ({1})'.format(user_id, type(user_id)))
+
+                return self._statistics[user_id]
+
             return self._statistics
 

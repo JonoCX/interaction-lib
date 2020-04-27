@@ -29,7 +29,8 @@ def interaction_events():
         'SEEK_FORWARD_BUTTON_CLICKED', 'VOLUME_MUTE_TOGGLED', 
         'VARIABLE_PANEL_NEXT_CLICKED', 'VARIABLE_PANEL_BACK_CLICKED',
         'BROWSER_VISIBILITY_CHANGE', 'WINDOW_ORIENTATION_CHANGE',
-        'NARRATIVE_ELEMENT_CHANGE'
+        'NARRATIVE_ELEMENT_CHANGE', 'LINK_CHOICE_CLICKED',
+        'USER_SET_VARIABLE'
     }
 
 # ------ INIT ------
@@ -179,10 +180,10 @@ def test_pauses_single_user(test_data, ground_truth):
     
     result = stats.calculate_pause_statistics(user_id = user)
 
-    assert result[user]['SP'] == ground_truth[user]['SP']
-    assert result[user]['MP'] == ground_truth[user]['MP']
-    assert result[user]['LP'] == ground_truth[user]['LP']
-    assert result[user]['VLP'] == ground_truth[user]['VLP']
+    assert result['SP'] == ground_truth[user]['SP']
+    assert result['MP'] == ground_truth[user]['MP']
+    assert result['LP'] == ground_truth[user]['LP']
+    assert result['VLP'] == ground_truth[user]['VLP']
 
 def test_pauses_single_user_errors(test_data):
     stats = Statistics(test_data)
@@ -242,22 +243,16 @@ def test_event_statistics_single_user(test_data, ground_truth, interaction_event
     # test that the stats are calculated for a single user and that they're correct
     res = stats.calculate_event_statistics(interaction_events, user_id = user)
 
-    # test that a single user (and the right one) is returned
-    assert len(res.keys()) == 1 and user in set(res.keys())
-
     # test that each stat is correct
     for u, stat in ground_truth.items():
         if u == user:
             for event in interaction_events:
-                assert res[user][event] == stat[event]
+                assert res[event] == stat[event]
 
     res = Statistics(test_data).calculate_event_statistics(
         interaction_events, include_link_choices = True, 
         include_user_set_variables = True, user_id = user
     )
-
-    # test that a single user is still returned
-    assert len(res.keys()) == 1 and user in set(res.keys())
 
     # add in the lcc and usv counts into the total events
     ground_truth[user]['total_events'] += ground_truth[user]['LINK_CHOICE_CLICKED']
@@ -267,7 +262,7 @@ def test_event_statistics_single_user(test_data, ground_truth, interaction_event
     for u, stat in ground_truth.items():
         if u == user:
             for event in interaction_events:
-                assert res[user][event] == stat[event]
+                assert res[event] == stat[event]
 
 def test_event_statistics_errors(test_data, ground_truth, interaction_events):
     stats = Statistics(test_data)
@@ -303,8 +298,55 @@ def test_event_statistics_errors(test_data, ground_truth, interaction_events):
 # ------ OVERALL STATISTICS ------
 def test_overall_statistics(test_data, ground_truth, interaction_events):
     stats = Statistics(test_data)
-    res = stats.calculate_statistics(interaction_events, verbose = 2)
+    res = stats.calculate_statistics(interaction_events, verbose = 0)
 
     for user, stat in ground_truth.items():
         for s, value in stat.items():
             assert value == ground_truth[user][s]
+
+def test_overall_statistics_single_user(test_data, ground_truth, interaction_events):
+    stats = Statistics(test_data)
+    user = '959c1a91-8b0f-4178-bc59-70499353204f'
+
+    individual_results = stats.calculate_statistics(
+        interaction_events, 
+        user_id = user,
+        include_link_choices = True,
+        include_user_set_variables = True
+    )
+    individual_ground_truth_results = ground_truth[user]
+
+    # assert that the length is the same (-1 because GT has 'reach_end')
+    assert len(individual_results) == len(individual_ground_truth_results) - 1
+
+    # time statistics should be approx equal
+    time_stats = {'hidden_time', 'raw_session_length', 'session_length'}
+
+    for stat, value in individual_results.items():
+        if stat in time_stats:
+            assert individual_ground_truth_results[stat] == pytest.approx(value, 0.1)
+        else:
+            assert individual_ground_truth_results[stat] == value
+    
+def test_overall_statistics_single_user_without_lcc_usv(test_data, ground_truth, interaction_events):
+    stats = Statistics(test_data)
+    user = 'b194b76c-7866-4b6d-8502-93ffe6322b64'
+
+    # time statistics shouldbe approx equal
+    time_stats = {'hidden_time', 'raw_session_length', 'session_length'}
+
+    # LCC and USV are included in the ground truth total events by default
+    gt_individual = ground_truth[user]
+    for stat, value in gt_individual.copy().items():
+        if stat == 'LINK_CHOICE_CLICKED' or stat == 'USER_SET_VARIABLE':
+            gt_individual['total_events'] -= gt_individual[stat]
+    
+    res_individual = stats.calculate_statistics(interaction_events, user_id = user)
+
+    for stat, value in res_individual.items():
+        if stat in time_stats:
+            assert gt_individual[stat] == pytest.approx(value, 0.1)
+        else:
+            assert gt_individual[stat] == value
+        
+
