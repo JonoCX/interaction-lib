@@ -1,6 +1,8 @@
 """ """
 
 from .base import BaseExtractor
+from ..util import get_hidden_time
+
 from joblib import Parallel, delayed, cpu_count
 from datetime import datetime as dt
 from collections import Counter, defaultdict
@@ -28,6 +30,7 @@ class Statistics(BaseExtractor):
         self._time_statistics = {}
         self._pause_statistics = {}
         self._event_statistics = {}
+        self._user_event_frequencies = {}
 
     def calculate_time_statistics(self, verbose = 0, user_id = None):
         """ 
@@ -344,6 +347,103 @@ class Statistics(BaseExtractor):
 
                 return self._event_statistics[user_id]
             return self._event_statistics
+
+    def calculate_event_frequencies(
+        self, 
+        frequencies_to_capture,
+        interaction_events, 
+        user_id = None, 
+        verbose = 0):
+        """ 
+        
+        :params frequencies_to_capture: a list of minutes as integers that you want
+        to capture event frequencies for, e.g. [0, 1, 2, 3] would indicate that
+        you want event frequencies for minutes 0 to 1, 1 to 2, and 2 to 3.
+        :params interaction_events: a set of events that you want to capture
+        frequencies for.
+        :params user_id: a specific user to capture event frequencies for.
+        :params verbose: the amount of std out (passed to joblib backend)
+        :returns: ...TODO
+        """
+        def _subset(min_threshold, max_threshold, events, user = None):
+            events_subset = []
+            elapsed_time = 0
+
+            previous_ts = None
+            for idx, event in enumerate(events):
+                # if it's the first loop, previous ts will be none
+                if idx == 0: previous_ts = event['timestamp']
+
+                hidden = 0 # record amount of time hidden, to subtract later
+                if (event['action_name'] == 'BROWSER_VISIBILITY_CHANGE' and
+                    event['data']['romper_to_state'] == 'hidden'):
+                    hidden_ts = event['timestamp']
+
+                    hidden = get_hidden_time(hidden_ts, idx, events) * 60
+                
+                elapsed_time += (event['timestamp'] - previous_ts).total_seconds() * 60
+                elapsed_time -= hidden
+
+                if user == '959c1a91-8b0f-4178-bc59-70499353204f':
+                    print(elapsed_time)
+
+                # if the elapsed time is between the min and max threshold
+                if min_threshold <= elapsed_time < max_threshold:
+                    events_subset.append(event)
+
+                previous_ts = event['timestamp']
+
+            return events_subset
+
+        def _get_frequencies(user_chunk, data_chunk):
+            user_dict = {user: [] for user in user_chunk}
+            for d in data_chunk: user_dict[d['user']].append(d)
+
+            results = {user: {} for user in user_chunk}
+
+            for user, events in user_dict.items():
+                if len(events) < 1: # the user has no events
+                    continue
+
+                for i in range(len(frequencies_to_capture) - 1):
+                    event_subset = _subset(frequencies_to_capture[i], frequencies_to_capture[i + 1], events, user = user)
+                
+                    if len(event_subset) == 0:
+                        continue
+
+                    if user == '959c1a91-8b0f-4178-bc59-70499353204f':
+                        print('\n', frequencies_to_capture[i], ' - ', frequencies_to_capture[i + 1])
+                        print([(event['timestamp'], event['action_name']) for event in event_subset])
+
+                    ua_counter = defaultdict(int) # counter for all events
+                    
+                    # set the default for each of the events
+                    for event in interaction_events: ua_counter[event] = 0
+
+                    for event in event_subset:
+                        if event['action_name'] in interaction_events:
+                            ua_counter[event['action_name']] += 1
+
+                    results[user][str(frequencies_to_capture[i]) + '_' + str(frequencies_to_capture[i + 1])] = dict(ua_counter)
+
+            return results
+        
+        # TODO add in the errors, etc.
+
+        if not self._user_event_frequencies:
+            self._user_event_frequencies = {user: {} for user, d in self.data.items()}
+            parallel = Parallel(n_jobs = self._num_cpu, verbose = verbose)
+
+            # run the event frequencies in parallel
+            results = parallel(delayed(_get_frequencies) (u, e) for u, e in self._users_split)
+
+            # unpack the results and add the frequencies into the dictionary
+            for res in results:
+                for user, event_freq in res.items():
+                    self._user_event_frequencies[user].update(event_freq)
+
+            return self._user_event_frequencies 
+
             
     def calculate_statistics(
         self, 

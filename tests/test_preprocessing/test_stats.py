@@ -395,3 +395,14 @@ def test_overall_statistics_errors(test_data, ground_truth, interaction_events):
             interaction_events = interaction_events,
             user_id = '150b'
         )
+
+# ------ EVENT FREQUENCIES ------
+def test_event_frequencies(test_data, ground_truth, interaction_events):
+    frequencies = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] # up to 10 minutes
+
+    stats = Statistics(test_data)
+    res = stats.calculate_event_frequencies(frequencies, interaction_events)
+
+    for user, freq in res.items():
+        if user == '959c1a91-8b0f-4178-bc59-70499353204f':
+            print(freq.keys())
