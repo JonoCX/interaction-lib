@@ -22,3 +22,11 @@ def get_hidden_time(hidden_ts, current_index, events):
 
     if visible_ts:
         return (visible_ts - hidden_ts).total_seconds()
+
+def missing_hidden_visibility_change(visbile_ts, current_index, events):
+    # nothing we can do at the start of the list
+    if current_index == 0: return 0 
+
+    pseudo_hidden_ts = events[current_index - 1]['timestamp']
+    
+    return (visbile_ts - pseudo_hidden_ts).total_seconds()

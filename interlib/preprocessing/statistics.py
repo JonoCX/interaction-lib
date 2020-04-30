@@ -1,7 +1,7 @@
 """ """
 
 from .base import BaseExtractor
-from ..util import get_hidden_time
+from ..util import get_hidden_time, missing_hidden_visibility_change
 
 from joblib import Parallel, delayed, cpu_count
 from datetime import datetime as dt
@@ -350,14 +350,14 @@ class Statistics(BaseExtractor):
 
     def calculate_event_frequencies(
         self, 
-        frequencies_to_capture,
+        frequencies,
         interaction_events, 
         user_id = None, 
         verbose = 0):
         """ 
         
-        :params frequencies_to_capture: a list of minutes as integers that you want
-        to capture event frequencies for, e.g. [0, 1, 2, 3] would indicate that
+        :params frequencies: a list of seconds as integers that you want
+        to capture event frequencies for, e.g. [0, 60, 120, 180] would indicate that
         you want event frequencies for minutes 0 to 1, 1 to 2, and 2 to 3.
         :params interaction_events: a set of events that you want to capture
         frequencies for.
@@ -365,11 +365,14 @@ class Statistics(BaseExtractor):
         :params verbose: the amount of std out (passed to joblib backend)
         :returns: ...TODO
         """
-        def _subset(min_threshold, max_threshold, events, user = None):
+        def _subset(min_threshold, max_threshold, events, previous_subset_ids):
             events_subset = []
             elapsed_time = 0
+            events_beyond_max_frequency = False
 
             previous_ts = None
+            seen_hidden = False
+            missing_visibility_change = False
             for idx, event in enumerate(events):
                 # if it's the first loop, previous ts will be none
                 if idx == 0: previous_ts = event['timestamp']
@@ -379,21 +382,37 @@ class Statistics(BaseExtractor):
                     event['data']['romper_to_state'] == 'hidden'):
                     hidden_ts = event['timestamp']
 
-                    hidden = get_hidden_time(hidden_ts, idx, events) * 60
+                    hidden = get_hidden_time(hidden_ts, idx, events)
+                    seen_hidden = True
+                elif (event['action_name'] == 'BROWSER_VISIBILITY_CHANGE' and 
+                    event['data']['romper_to_state'] == 'visible' and
+                    not seen_hidden):
+                    visible_ts = event['timestamp']
+
+                    hidden = missing_hidden_visibility_change(visible_ts, idx, events)
+                    seen_hidden = False
+                    missing_visibility_change = True
                 
-                elapsed_time += (event['timestamp'] - previous_ts).total_seconds() * 60
+                # update the elapsed time and subtract any hidden time
+                elapsed_time += (event['timestamp'] - previous_ts).total_seconds()
                 elapsed_time -= hidden
+            
+                between_threshold = min_threshold <= elapsed_time < max_threshold
 
-                if user == '959c1a91-8b0f-4178-bc59-70499353204f':
-                    print(elapsed_time)
-
-                # if the elapsed time is between the min and max threshold
-                if min_threshold <= elapsed_time < max_threshold:
+                # # if the elapsed time is between the min and max threshold
+                if (between_threshold and event['id'] not in previous_subset_ids):
                     events_subset.append(event)
+                elif (not between_threshold and missing_visibility_change and event['id'] not in previous_subset_ids):
+                    events_subset.append(event)
+                    missing_visibility_change = False
 
                 previous_ts = event['timestamp']
 
-            return events_subset
+                # condition two: check if the user has events beyond the maximum threshold
+                if elapsed_time < max_threshold:
+                    events_beyond_max_frequency = True
+
+            return events_subset, events_beyond_max_frequency
 
         def _get_frequencies(user_chunk, data_chunk):
             user_dict = {user: [] for user in user_chunk}
@@ -404,16 +423,26 @@ class Statistics(BaseExtractor):
             for user, events in user_dict.items():
                 if len(events) < 1: # the user has no events
                     continue
-
-                for i in range(len(frequencies_to_capture) - 1):
-                    event_subset = _subset(frequencies_to_capture[i], frequencies_to_capture[i + 1], events, user = user)
                 
-                    if len(event_subset) == 0:
-                        continue
+                subset_ids = set([])
+                for idx, i in enumerate(range(len(frequencies) - 1)):
+                    event_subset, events_beyond_max_freq = _subset(
+                        frequencies[i], frequencies[i + 1], events,
+                        previous_subset_ids = subset_ids
+                    )
+
+                    # ids in subset
+                    subset_ids.update([ev['id'] for ev in event_subset])
+                
+                    # two exit conditions: 1) the user has no events left
+                    # & 2) they have events but are beyond the given frequencies (the last frequency)
+                    # if the length is zero and there's no events beyond the current
+                    # max frequency (frequencies[i + 1])
+                    if (len(event_subset) == 0 and not events_beyond_max_freq):
+                        break # there's no more events
 
                     if user == '959c1a91-8b0f-4178-bc59-70499353204f':
-                        print('\n', frequencies_to_capture[i], ' - ', frequencies_to_capture[i + 1])
-                        print([(event['timestamp'], event['action_name']) for event in event_subset])
+                        print(frequencies[i], frequencies[i+1], [(ev['timestamp'].strftime("%m-%d, %H:%M:%S.%f")[:-3], ev['action_name']) for ev in event_subset], '\n')
 
                     ua_counter = defaultdict(int) # counter for all events
                     
@@ -424,7 +453,11 @@ class Statistics(BaseExtractor):
                         if event['action_name'] in interaction_events:
                             ua_counter[event['action_name']] += 1
 
-                    results[user][str(frequencies_to_capture[i]) + '_' + str(frequencies_to_capture[i + 1])] = dict(ua_counter)
+                    # need to drop the first play pause, it always happens at the start
+                    if idx == 0 and ua_counter['PLAY_PAUSE_BUTTON_CLICKED'] != 0:
+                        ua_counter['PLAY_PAUSE_BUTTON_CLICKED'] -= 1
+
+                    results[user][str(frequencies[i]) + '_' + str(frequencies[i + 1])] = dict(ua_counter)
 
             return results
         
