@@ -389,9 +389,12 @@ class Statistics(BaseExtractor):
                     not seen_hidden):
                     visible_ts = event['timestamp']
 
+                    # find the missing hidden visibility change
                     hidden = missing_hidden_visibility_change(visible_ts, idx, events)
-                    seen_hidden = False
-                    missing_visibility_change = True
+                    seen_hidden = False # ensure that this is false
+                    
+                    # flag that this data querk has happened
+                    missing_visibility_change = True 
                 
                 # update the elapsed time and subtract any hidden time
                 elapsed_time += (event['timestamp'] - previous_ts).total_seconds()
@@ -399,9 +402,11 @@ class Statistics(BaseExtractor):
             
                 between_threshold = min_threshold <= elapsed_time < max_threshold
 
-                # # if the elapsed time is between the min and max threshold
+                # if the elapsed time is between the min and max threshold
                 if (between_threshold and event['id'] not in previous_subset_ids):
                     events_subset.append(event)
+                # else if the value isn't between the threshold, the data querk happened
+                # and the event hasn't been previously seen
                 elif (not between_threshold and missing_visibility_change and event['id'] not in previous_subset_ids):
                     events_subset.append(event)
                     missing_visibility_change = False
@@ -434,14 +439,18 @@ class Statistics(BaseExtractor):
                     # ids in subset
                     subset_ids.update([ev['id'] for ev in event_subset])
                 
-                    # two exit conditions: 1) the user has no events left
-                    # & 2) they have events but are beyond the given frequencies (the last frequency)
+                    """ 
+                    Two exit conditions:
+                        1) the user has no events left
+                        2) they have events but are beyond the current
+                        max frequency. 
+                    """
                     # if the length is zero and there's no events beyond the current
                     # max frequency (frequencies[i + 1])
                     if (len(event_subset) == 0 and not events_beyond_max_freq):
                         break # there's no more events
 
-                    if user == '959c1a91-8b0f-4178-bc59-70499353204f':
+                    if user == 'b4588353-cecb-4dee-ae8b-833d7888dec5':
                         print(frequencies[i], frequencies[i+1], [(ev['timestamp'].strftime("%m-%d, %H:%M:%S.%f")[:-3], ev['action_name']) for ev in event_subset], '\n')
 
                     ua_counter = defaultdict(int) # counter for all events
@@ -450,6 +459,7 @@ class Statistics(BaseExtractor):
                     for event in interaction_events: ua_counter[event] = 0
 
                     for event in event_subset:
+                        if event['action_type'] == 'segmentCompletion': continue
                         if event['action_name'] in interaction_events:
                             ua_counter[event['action_name']] += 1
 

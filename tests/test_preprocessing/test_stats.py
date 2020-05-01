@@ -399,7 +399,7 @@ def test_overall_statistics_errors(test_data, ground_truth, interaction_events):
 
 # ------ EVENT FREQUENCIES ------
 def test_event_frequencies(test_data, ground_truth, interaction_events):
-    frequencies = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] # up to 10 minutes
+    frequencies = [0, 1, 2, 3, 4, 5] # up to 10 minutes
     # frequencies = [i for i in range(0, )]
     frequencies = [v * 60 for v in frequencies]
     print(frequencies)
@@ -407,6 +407,13 @@ def test_event_frequencies(test_data, ground_truth, interaction_events):
     stats = Statistics(test_data)
     res = stats.calculate_event_frequencies(frequencies, interaction_events)
 
+    # for user, freq in res.items():
+    #     # print(user, freq.keys())
+    #     # for t, counts in freq.items():
+    #     #     print(t, all(value == 0 for value in counts.values()))
+    #     if user == 'be3720be-3da1-419c-b912-cacc3f80a427':
+    #         for t, counts in freq.items():
+    #             print(t, counts)
     # for user, freq in res.items():
     #     if user == '959c1a91-8b0f-4178-bc59-70499353204f':
     #         for time_freq, counts in freq.items():
