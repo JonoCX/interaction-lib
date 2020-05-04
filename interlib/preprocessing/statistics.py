@@ -450,15 +450,12 @@ class Statistics(BaseExtractor):
                     if (len(event_subset) == 0 and not events_beyond_max_freq):
                         break # there's no more events
 
-                    if user == 'b4588353-cecb-4dee-ae8b-833d7888dec5':
-                        print(frequencies[i], frequencies[i+1], [(ev['timestamp'].strftime("%m-%d, %H:%M:%S.%f")[:-3], ev['action_name']) for ev in event_subset], '\n')
-
                     ua_counter = defaultdict(int) # counter for all events
                     
                     # set the default for each of the events
                     for event in interaction_events: ua_counter[event] = 0
 
-                    for event in event_subset:
+                    for event in event_subset: # ignoring segmentCompletions events
                         if event['action_type'] == 'segmentCompletion': continue
                         if event['action_name'] in interaction_events:
                             ua_counter[event['action_name']] += 1
