@@ -469,8 +469,27 @@ class Statistics(BaseExtractor):
             return results
         
         # TODO add in the errors, etc.
+        if not isinstance(frequencies, list):
+            raise TypeError('Event Frequencies should be a list of second intervals: {0} ({1}'.format(
+                frequencies, type(frequencies)    
+            ))
+        
+        if len(frequencies) == 0:
+            raise ValueError('Event frequencies cannot be an empty list: {0}'.format(frequencies))
+
+        if not all(isinstance(x, (int, float)) for x in frequencies):
+            raise TypeError('Contents of event frequencies are not ints or floats.')
 
         if not self._user_event_frequencies:
+            if user_id is not None: # if a specific user is requested
+                if not isinstance(user_id, str):
+                    raise TypeError('User ID should be a string: {0} ({1})'.format(user_id, type(user_id)))
+
+                if user_id not in self.data.keys():
+                    raise ValueError('Invalid user ID: {0}'.format(user_id))
+
+                return _get_frequencies(user_chunk = [user_id], data_chunk = self.data[user_id])[user_id]
+
             self._user_event_frequencies = {user: {} for user, d in self.data.items()}
             parallel = Parallel(n_jobs = self._num_cpu, verbose = verbose)
 
@@ -483,6 +502,16 @@ class Statistics(BaseExtractor):
                     self._user_event_frequencies[user].update(event_freq)
 
             return self._user_event_frequencies 
+        else:
+            if user_id is not None: # if a specific user is requested
+                if not isinstance(user_id, str):
+                    raise TypeError('User ID should be a string: {0} ({1})'.format(user_id, type(user_id)))
+
+                if user_id not in self.data.keys():
+                    raise ValueError('Invalid User ID: {0}'.format(user_id))
+
+                return self._user_event_frequencies[user_id]
+            return self._user_event_frequencies
 
             
     def calculate_statistics(

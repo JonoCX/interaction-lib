@@ -302,6 +302,67 @@ def test_event_statistics_errors(test_data, ground_truth, interaction_events):
     with pytest.raises(ValueError):
         stats.calculate_event_statistics(interaction_events, user_id = '150b')
 
+# ------ EVENT FREQUENCIES ------
+def test_event_frequencies(test_data, event_frequencies, interaction_events):
+    frequencies = [0, 1, 2, 3, 4, 5] # up to 10 minutes
+    frequencies = [v * 60 for v in frequencies]
+
+    stats = Statistics(test_data)
+    res = stats.calculate_event_frequencies(frequencies, interaction_events)
+
+    for user, freq in event_frequencies.items(): # for each of the users and their freq
+        test_freq = res[user] # grab the test data for the user
+        if test_freq: # if that user exists
+            for time, counts in freq.items(): # time and the associated counts
+                test_counts = test_freq[time] # get the event counts for the time slice
+                for event, count in counts.items(): # for each event and it's count
+                    assert test_counts[event] == count # assert they're equal
+
+def test_event_frequencies_single_user(test_data, event_frequencies, interaction_events):
+    frequencies = [v * 60 for v in range(0, 6)]
+    stats = Statistics(test_data)
+    user = 'be3720be-3da1-419c-b912-cacc3f80a427'
+
+    # test that the event frequencies are correct when fetching a single user
+    res = stats.calculate_event_frequencies(frequencies, interaction_events, user_id = user)
+
+    # for each of the time slices and counts
+    for time, counts in event_frequencies[user].items():
+        test_counts = res[time] # get the counts for the test slice
+        for event, count in counts.items(): # for each event and count
+            assert test_counts[event] == count # assert that they're the same
+
+def test_event_frequencies_errors(test_data, event_frequencies, interaction_events):
+    stats = Statistics(test_data)
+
+    # test that a type error is thrown when:
+    with pytest.raises(TypeError):
+        # a non-list type is passed as event frequencies
+        stats.calculate_event_frequencies(frequencies = {}, interaction_events = interaction_events)
+
+        # a non integer/float list is passed as event frequencies
+        stats.calculate_event_frequencies(frequencies = ['1', '2'], interaction_events = interaction_events)
+
+        # a none string type is passed at the user id
+        stats.calculate_event_frequencies(event_frequencies, interaction_events, user_id = 150)
+
+        # a none string type is passed after the frequencies have been calculated.
+        stats.calculate_event_frequencies(event_frequencies, interaction_events)
+        stats.calculate_event_frequencies(event_frequencies, interaction_events, user_id = 150)
+
+    # test that a value error is thrown when:
+    with pytest.raises(ValueError):
+        # an event frequencies empty list is passed
+        stats.calculate_event_frequencies(frequencies = [], interaction_events = interaction_events)
+
+        # a user id that is not in the data is passed
+        stats.calculate_event_frequencies(event_frequencies, interaction_events, user_id = '150b')
+
+        # a user id that is not in the data is passed after the freq's have been calculated
+        stats.calculate_event_frequencies(event_frequencies, interaction_events)
+        stats.calculate_event_frequencies(event_frequencies, interaction_events, user_id = '150b')
+
+
 # ------ OVERALL STATISTICS ------
 def test_overall_statistics(test_data, ground_truth, interaction_events):
     stats = Statistics(test_data)
@@ -402,20 +463,3 @@ def test_overall_statistics_errors(test_data, ground_truth, interaction_events):
             interaction_events = interaction_events,
             user_id = '150b'
         )
-
-# ------ EVENT FREQUENCIES ------
-def test_event_frequencies(test_data, event_frequencies, interaction_events):
-    frequencies = [0, 1, 2, 3, 4, 5] # up to 10 minutes
-    frequencies = [v * 60 for v in frequencies]
-    print(frequencies)
-
-    stats = Statistics(test_data)
-    res = stats.calculate_event_frequencies(frequencies, interaction_events)
-
-    for user, freq in event_frequencies.items(): # for each of the users and their freq
-        test_freq = res[user] # grab the test data for the user
-        if test_freq: # if that user exists
-            for time, counts in freq.items(): # time and the associated counts
-                test_counts = test_freq[time] # get the event counts for the time slice
-                for event, count in counts.items(): # for each event and it's count
-                    assert test_counts[event] == count # assert they're equal
