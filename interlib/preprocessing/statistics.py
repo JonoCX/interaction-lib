@@ -468,7 +468,6 @@ class Statistics(BaseExtractor):
 
             return results
         
-        # TODO add in the errors, etc.
         if not isinstance(frequencies, list):
             raise TypeError('Event Frequencies should be a list of second intervals: {0} ({1}'.format(
                 frequencies, type(frequencies)    

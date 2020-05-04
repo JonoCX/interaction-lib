@@ -10,13 +10,13 @@ from interlib.preprocessing.statistics import Statistics
 # Fixtures
 @pytest.fixture
 def test_data():
-    with open('tests/test_data/test_data.p', 'rb') as data_in:
+    with open('tests/test_data_files/test_data.p', 'rb') as data_in:
         data = pickle.load(data_in)
     return data
 
 @pytest.fixture
 def ground_truth():
-    with open('tests/test_data/test_statistics.json', 'r') as data_in:
+    with open('tests/test_data_files/test_statistics.json', 'r') as data_in:
         data = json.load(data_in)
     return data
 
@@ -36,7 +36,7 @@ def interaction_events():
 
 @pytest.fixture
 def event_frequencies():
-    with open('tests/test_data/test_event_frequencies.json', 'r') as data_in:
+    with open('tests/test_data_files/test_event_frequencies.json', 'r') as data_in:
         data = json.load(data_in)
     return data
 
