@@ -19,12 +19,8 @@ def to_dict(
     include_narrative_element_id: Optional[bool] = False,
     sort: Optional[bool] = False
 ):
-    """ 
-        NOTES:
-            - takes a path to a json file
-            - able to split, single parameter: None by default, int otherwise
-            - returns the data in {user -> events, user -> events} format
-            - if it's a split, then [{u1 -> ev1, u2 -> ev2}, {...}]
+    """
+        TODO: only read in a select set of users.
     """
     if not isinstance(path, str):
         raise TypeError('Path is not a string: {0} ({1})'.format(path, type(path)))

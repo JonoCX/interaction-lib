@@ -34,7 +34,7 @@ def missing_hidden_visibility_change(visbile_ts, current_index, events):
     return (visbile_ts - pseudo_hidden_ts).total_seconds()
 
 #####
-##
+## DATA OPERATIONS
 #####
 def parse_raw_data(raw_data, datetime_format, include_narrative_element):
     parsed_data = []
@@ -63,3 +63,13 @@ def parse_raw_data(raw_data, datetime_format, include_narrative_element):
         parsed_data.append(p_data)
 
     return parsed_data
+
+def parse_timestamp(data, datetime_format = "%Y-%m-%d %H:%M:%S.%f"):
+    for event in data:
+        timestamp = event['timestamp']
+        if len(timestamp) < 24: timestamp = timestamp + '.000'
+        event.update(
+            (k , dt.strptime(timestamp[:23], datetime_format))
+            for k, v in event.items() if k == 'timestamp'
+        )
+    return data

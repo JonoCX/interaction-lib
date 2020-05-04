@@ -16,5 +16,5 @@ setup(
     author = author,
     author_email = author_email,
     long_description = long_description,
-    packages = ['interlib', ]
+    packages = ['interlib']
 )
