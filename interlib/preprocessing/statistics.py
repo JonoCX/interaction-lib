@@ -6,6 +6,7 @@ from ..util import get_hidden_time, missing_hidden_visibility_change
 from joblib import Parallel, delayed, cpu_count
 from datetime import datetime as dt
 from collections import Counter, defaultdict
+from typing import Optional, Union
 
 import numpy as np 
 import pandas as pd 
@@ -175,6 +176,37 @@ class Statistics(BaseExtractor):
         elif 15 < diff <= 30: return 'LP', diff # 16 -> 30
         elif diff > 30: return 'VLP', diff # more than 30
         else: return 0, diff # base case
+
+    def _pause_counts(
+        self, 
+        events: list
+    ):
+        pauses = []
+        previous_timestamp = None
+        for event in events:
+            # we're only counting pauses between user events, ignoring
+            # variable setting and link choices
+            if (event['action_type'] == 'USER_ACTION' and
+                event['action_name'] != 'USER_SET_VARIABLE' and
+                event['action_name'] != 'LINK_CHOICE_CLICKED'):
+                if previous_timestamp is None: # no previous, set first ts
+                    previous_timestamp = event['timestamp']
+
+                # get the type of pause, if any
+                pause_type, diff = self._type_of_pause(previous_timestamp, event['timestamp'])
+
+                if pause_type != 0: # if there is a pause
+                    pauses.append(pause_type)
+
+                # update to the current
+                previous_timestamp = event['timestamp']
+
+        # get a count of the pauses
+        pauses = Counter(pauses)
+        return {
+            'SP': pauses['SP'], 'MP': pauses['MP'],
+            'LP': pauses['LP'], 'VLP': pauses['VLP']
+        }
         
     def calculate_pause_statistics(self, verbose = 0, user_id = None):
         """ """
@@ -189,30 +221,9 @@ class Statistics(BaseExtractor):
                     results[user].update({'SP': 0, 'MP': 0, 'LP': 0, 'VLP': 0})
                     continue
 
-                pauses = []
-                previous_timestamp = None
-                for event in events:
-                    # we only count pauses between user events, ignored variable 
-                    # setting and link choices
-                    if (event['action_type'] == 'USER_ACTION' and 
-                        event['action_name'] != 'USER_SET_VARIABLE' and 
-                        event['action_name'] != 'LINK_CHOICE_CLICKED'):
-                        if previous_timestamp is None:
-                            previous_timestamp = event['timestamp'] # no previous, first iteration
-                        
-                        # get the type of pause
-                        pause_type, diff = self._type_of_pause(previous_timestamp, event['timestamp'])
-                       
-                        if pause_type != 0: # there is a pause
-                            pauses.append(pause_type)
-
-                        previous_timestamp = event['timestamp'] # update to the current
-                
-                pauses = Counter(pauses)
-                results[user].update({
-                    'SP': pauses['SP'], 'MP': pauses['MP'], 'LP': pauses['LP'],
-                    'VLP': pauses['VLP']
-                })
+                results[user].update(
+                    self._pause_counts(events)
+                )
             
             return results
 
@@ -353,6 +364,7 @@ class Statistics(BaseExtractor):
         frequencies,
         interaction_events, 
         user_id = None, 
+        include_pauses = False,
         verbose = 0):
         """ 
         
@@ -459,6 +471,14 @@ class Statistics(BaseExtractor):
                         if event['action_type'] == 'segmentCompletion': continue
                         if event['action_name'] in interaction_events:
                             ua_counter[event['action_name']] += 1
+
+                    # if pauses need to be included
+                    if include_pauses:
+                        for pause in ['SP', 'MP', 'LP', 'VLP']:
+                            ua_counter[pause] = 0
+
+                        for pause, count in self._pause_counts(event_subset):
+                            ua_counter[pause] = count
 
                     # need to drop the first play pause, it always happens at the start
                     if idx == 0 and ua_counter['PLAY_PAUSE_BUTTON_CLICKED'] != 0:
