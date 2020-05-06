@@ -5,7 +5,9 @@ from .helpers import parse_raw_data
 
 from typing import (
     Optional,
-    Union
+    Union, 
+    List,
+    Dict
 )
 from datetime import datetime as dt
 
@@ -18,8 +20,21 @@ def to_dict(
     datetime_format: Optional[str] = "%Y-%m-%d %H:%M:%S.%f",
     include_narrative_element_id: Optional[bool] = False,
     sort: Optional[bool] = False
-):
+) -> Union[Dict[str, List], List[Dict[str, List]]]:
     """
+        Utility function to convert a raw dataset (in a json export from DB
+        format) to the format that is internally used: {user -> events}
+
+        :params path: the path to the data file (json)
+        :params split: whether the data should be split (into 2, default) or
+        the number of splits requested
+        :params datetime_format: the format for the timestamp, compatiable with
+        datetime
+        :params include_narrative_element: whether to include narrative element
+        changes
+        :params sort: whether or not to sort the data by the timestamp.
+        :returns: dictionary of values: {user -> events} or, if split, then
+        a list of dictionaries in [{user -> events}] format
         TODO: only read in a select set of users.
     """
     if not isinstance(path, str):

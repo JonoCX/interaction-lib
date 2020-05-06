@@ -6,7 +6,7 @@ from ..util import get_hidden_time, missing_hidden_visibility_change
 from joblib import Parallel, delayed, cpu_count
 from datetime import datetime as dt
 from collections import Counter, defaultdict
-from typing import Optional, Union
+from typing import Optional, Union, List, Set, Dict
 
 import numpy as np 
 import pandas as pd 
@@ -15,7 +15,7 @@ np.random.seed(42)
 
 class Statistics(BaseExtractor):
     
-    def __init__(self, user_event_dict, n_jobs = -1):
+    def __init__(self, user_event_dict, n_jobs = -1) -> None:
         if not isinstance(user_event_dict, dict):
             raise TypeError('User Event dictionary is not a dict')
 
@@ -33,12 +33,17 @@ class Statistics(BaseExtractor):
         self._event_statistics = {}
         self._user_event_frequencies = {}
 
-    def calculate_time_statistics(self, verbose = 0, user_id = None):
+    def calculate_time_statistics(
+        self, 
+        verbose: Optional[int] = 0, 
+        user_id: Optional[str] = None
+    ) -> Dict:
         """ 
             Using the user event data, calculate the hidden time, raw
             session length, and session length of the users.
 
             :params verbose: passed to the joblib backend
+            :params user_id: a specific user to get the statistics for
             :returns: dictionary of results {user -> {hidden_time: 0...}}
         """
         def _get_stats(user_chunk, data_chunk):
@@ -132,12 +137,17 @@ class Statistics(BaseExtractor):
                 return self._time_statistics[user_id]
             return self._time_statistics
 
-    def calculate_session_length(self, user_id = None, verbose = 0):
+    def calculate_session_length(
+        self, 
+        user_id: Optional[str] = None, 
+        verbose: Optional[int] = 0
+    ) -> Dict:
         """ 
             Calculate the session length only.
 
             :params user_id: specify a user, default is to calculate
-            for all users 
+            for all users
+            :params verbose: verbosity passed to the joblib backend 
             :returns: the session length or 
             all session lengths as dictionary {user -> session length}
         """
@@ -158,8 +168,20 @@ class Statistics(BaseExtractor):
             
             return {user: stat['session_length'] for user, stat in self._time_statistics.items()}
 
-    def _type_of_pause(self, timestamp, next_timestamp):
-        """ """
+    def _type_of_pause(
+        self, 
+        timestamp: dt, 
+        next_timestamp: dt
+    ) -> Union[str, int]:
+        """ 
+            Determine the type of pause that has happened based on
+            two timestamps.
+
+            :params timestamp: the current event time
+            :params next_timestamp: the next event time
+            :returns: the type of pause (str) and the difference
+            between the two parameters
+        """
         if timestamp is None or next_timestamp is None:
             raise ValueError('Both timestamp parameters have to be initialised')
         
@@ -180,7 +202,13 @@ class Statistics(BaseExtractor):
     def _pause_counts(
         self, 
         events: list
-    ):
+    ) -> Dict[str, int]:
+        """
+            Given a set of user actions, count the number of
+            pauses that occur.
+
+            :params events: the user events
+        """
         pauses = []
         previous_timestamp = None
         for event in events:
@@ -208,8 +236,19 @@ class Statistics(BaseExtractor):
             'LP': pauses['LP'], 'VLP': pauses['VLP']
         }
         
-    def calculate_pause_statistics(self, verbose = 0, user_id = None):
-        """ """
+    def calculate_pause_statistics(
+        self, 
+        verbose: Optional[int] = 0, 
+        user_id: Optional[str] = None
+    ) -> Dict[str, Dict]:
+        """ 
+            Based on the event data supplied, calculate the pause
+            statistics for each of the users.
+
+            :params verbose: verbosity level passed to the joblib backend
+            :params user_id: a specific user to calculate the statistics for
+            :returns: a dictionary with a mapping from user to statistics
+        """
         def _get_pauses(user_chunk, data_chunk):
             user_dict = {user: [] for user in user_chunk}
             for d in data_chunk: user_dict[d['user']].append(d)
@@ -264,14 +303,15 @@ class Statistics(BaseExtractor):
 
     def calculate_event_statistics(
         self,
-        interaction_events,
-        include_link_choices = False,
-        include_user_set_variables = False,
-        verbose = 0,
-        user_id = None):
+        interaction_events: List[str],
+        include_link_choices: Optional[bool] = False,
+        include_user_set_variables: Optional[bool] = False,
+        verbose: Optional[int] = 0,
+        user_id: Optional[str] = None
+    ) -> Dict[str, Dict[str, int]]:
         """ 
         
-        :params event_mapping: all of the events that should be counted
+        :params interaction_events: all of the events that should be counted
         :params include_link_choices: whether to include LC in the total count
         :params include_user_set_variable: whether to include USV in the total count
         :params verbose: the level of output passed to the joblib backend
@@ -361,12 +401,15 @@ class Statistics(BaseExtractor):
 
     def calculate_event_frequencies(
         self, 
-        frequencies,
-        interaction_events, 
-        user_id = None, 
-        include_pauses = False,
-        verbose = 0):
+        frequencies: List[Union[int, float]],
+        interaction_events: List[str], 
+        user_id: Optional[str] = None, 
+        include_pauses: Optional[bool] = False,
+        verbose: Optional[int] = 0
+    ) -> Dict[str, Dict[str, Dict[str, int]]]:
         """ 
+        From a list of events and give a set of time thresholds,
+        calculate the frequency that events happen in those periods.
         
         :params frequencies: a list of seconds as integers that you want
         to capture event frequencies for, e.g. [0, 60, 120, 180] would indicate that
@@ -375,7 +418,9 @@ class Statistics(BaseExtractor):
         frequencies for.
         :params user_id: a specific user to capture event frequencies for.
         :params verbose: the amount of std out (passed to joblib backend)
-        :returns: ...TODO
+        :returns: a dictionary mapping users to an inner dictionary containing
+        a mapping of time thresholds and the count of the interaction_events
+        in that time threshold
         """
         def _subset(min_threshold, max_threshold, events, previous_subset_ids):
             events_subset = []
@@ -535,12 +580,25 @@ class Statistics(BaseExtractor):
             
     def calculate_statistics(
         self, 
-        interaction_events,
-        user_id = None,
-        include_link_choices = False,
-        include_user_set_variables = False,
-        verbose = 0):
-        """ Main function for calculating the statistics: Imp last. """
+        interaction_events: List[str],
+        user_id: Optional[str] = None,
+        include_link_choices: Optional[bool] = False,
+        include_user_set_variables: Optional[bool] = False,
+        verbose: Optional[int] = 0
+    ) -> Dict[str, Dict[str, Union[int, float]]]:
+        """ 
+            The main function for calculating all statistics, excluding the 
+            event frequencies.
+
+            :params interaction_events: a list of events that you want to
+            track in the statistics
+            :params user_id: a specific user to calculate statistics for
+            :params include_link_choices: whether to include LC in the statistics
+            :params include_user_set_variables: whether to include USV in the statistics
+            :params verbose: verbosity level passed to joblib backend
+            :returns: a dictionary containing a mapping from users to their
+            respective statistics.
+        """
 
         # check that the interaction events is a set
         if not isinstance(interaction_events, set):
