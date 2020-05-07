@@ -129,6 +129,13 @@ def test_getting_only_session_length_one_user(test_data, ground_truth):
     with pytest.raises(ValueError):
         stats.calculate_session_length(user_id = 'user_id')
 
+# ----- TIME TO COMPLETION ------
+def test_time_to_completion(test_data, ground_truth):
+    stats = Statistics(test_data, completion_point = 'Credits')
+
+    res = stats.calculate_time_statistics()
+    # TODO Needs testing
+
 # ----- PAUSE STATISTICS -----
 def test_type_of_pause(test_data):
     stats = Statistics(test_data)

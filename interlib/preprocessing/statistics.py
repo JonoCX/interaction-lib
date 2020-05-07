@@ -15,15 +15,27 @@ np.random.seed(42)
 
 class Statistics(BaseExtractor):
     
-    def __init__(self, user_event_dict, n_jobs = -1) -> None:
+    def __init__(
+        self, 
+        user_event_dict: Dict[str, List[Dict]], 
+        completion_point: Optional[str] = None,
+        n_jobs: Optional[int] = -1
+    ) -> None:
         if not isinstance(user_event_dict, dict):
             raise TypeError('User Event dictionary is not a dict')
 
         if len(user_event_dict) == 0:
             raise ValueError('User event dictionary must have at least one value or not None')
+
+        if completion_point and not isinstance(completion_point, str):
+            raise TypeError('completion_point should be a str')
+
+        if not isinstance(n_jobs, int):
+            raise TypeError('n_jobs should be an int')
         
         super(Statistics, self).__init__(
             user_event_dict = user_event_dict.copy(),
+            completion_point = completion_point,
             n_jobs = n_jobs
         )
 
@@ -66,6 +78,8 @@ class Statistics(BaseExtractor):
                 timestamps[user] = [event['timestamp'] for event in events] # collect timestamps
 
                 hidden_times = []
+                hidden_time_completion_point = None 
+                timestamp_reached_completion_point = None
                 # for all events, if there is a visibility change to hidden
                 for index, event in enumerate(events): 
                     if (event['action_name'] == 'BROWSER_VISIBILITY_CHANGE' and 
@@ -87,9 +101,26 @@ class Statistics(BaseExtractor):
 
                         if visible_ts: # if found, calculate the difference
                             hidden_times.append((visible_ts - hidden_ts).total_seconds())
-                
+
+                    # time of completion
+                    if self.completion_point:
+                        if (event['action_type'] == 'STORY_NAVIGATION' and 
+                            event['data']['romper_to_state'] == self.completion_point and
+                            self._users_reached_completion_point[user]):
+                            hidden_time_completion_point = np.sum(hidden_times)
+                            timestamp_reached_completion_point = event['timestamp']
+
                 # record the sum of the hidden times.
                 results[user].update({'hidden_time': np.sum(hidden_times)})
+
+                # time to completion statistics
+                if self.completion_point:
+                    if not self._users_reached_completion_point[user]:
+                        results[user].update({'time_to_completion': 0.0})
+                    else:
+                        # have to take into account the hidden time.
+                        raw_time = (timestamp_reached_completion_point - timestamps[user][0]).total_seconds()
+                        results[user].update({'time_to_completion': raw_time - hidden_time_completion_point})
 
             # calculate the raw session length
             for user, ts in timestamps.items():

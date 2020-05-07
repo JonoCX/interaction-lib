@@ -5,9 +5,13 @@ import numpy as np
 class BaseExtractor():
     """ Base class for all of the extractors """
     
-    def __init__(self, user_event_dict, n_jobs = -1):
+    def __init__(self, user_event_dict, completion_point = None, n_jobs = -1):
         self.data = self._sort_events(user_event_dict)
+        self.completion_point = completion_point
         self.n_jobs = n_jobs
+
+        if self.completion_point:
+            self._users_reached_completion_point = self.reached_completion_point()
 
         if self.n_jobs == -1: self._num_cpu = cpu_count()
         else: self._num_cpu = n_jobs
@@ -31,3 +35,18 @@ class BaseExtractor():
                     split_events[idx].append(e)
         
         return zip(splits, split_events)
+
+    def reached_completion_point(self):
+        """ """
+        reached_end = {}
+        for user, events in self.data.items():
+            ne_changes = [change for change in events if change['action_type'] == 'STORY_NAVIGATION']
+
+            for ne_change in ne_changes:
+                if ne_change['data']['romper_to_state'] == self.completion_point:
+                    reached_end[user] = True 
+                    break
+            
+            if user not in reached_end.keys(): reached_end[user] = False
+
+        return reached_end
