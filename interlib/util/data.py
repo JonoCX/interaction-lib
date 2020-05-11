@@ -7,7 +7,8 @@ from typing import (
     Optional,
     Union, 
     List,
-    Dict
+    Dict,
+    Set
 )
 from datetime import datetime as dt
 
@@ -19,7 +20,8 @@ def to_dict(
     split: Optional[Union[bool, int]] = None,
     datetime_format: Optional[str] = "%Y-%m-%d %H:%M:%S.%f",
     include_narrative_element_id: Optional[bool] = False,
-    sort: Optional[bool] = False
+    sort: Optional[bool] = False,
+    users_to_include: Optional[Set[str]] = None
 ) -> Union[Dict[str, List], List[Dict[str, List]]]:
     """
         Utility function to convert a raw dataset (in a json export from DB
@@ -65,11 +67,15 @@ def to_dict(
     if split:
         if isinstance(split, bool): # if it's a bool
             split = 2 # then just use 2 as the default
-        
-        # create a set of all user ids
-        user_ids = []
-        for event in data:
-            user_ids.append(event['user'])
+    
+        # create a list of all user ids
+        if users_to_include: # if we're looking for a subset
+            user_ids = []
+            for event in data:
+                if event['user'] in users_to_include:
+                    user_ids.append(event['user'])
+        else: # otherwise, it's everyone
+            user_ids = [event['user'] for event in data]
 
         # partition the user id's into the split value
         split_users = np.array_split(user_ids, split)
@@ -107,7 +113,12 @@ def to_dict(
 
         return events
     else:
-        user_ids = {event['user'] for event in data}
+        if users_to_include:
+            user_ids = {
+                event['user'] for event in data if event['user'] in users_to_include
+            }
+        else:
+            user_ids = {event['user'] for event in data}
 
         # build up the user events dict {user -> [events]}
         user_events = {id: [] for id in user_ids}

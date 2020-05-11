@@ -39,6 +39,17 @@ def test_to_dict_split_util(user_ids, data_location):
         assert isinstance(chunk, dict)
         assert all(isinstance(x, list) for u, x in chunk.items())
 
+def test_to_dict_user_subset(user_ids, data_location):
+    user_ids = list(user_ids)
+    subset_include = user_ids[:len(user_ids) // 2]
+    subset_exclude = user_ids[len(user_ids) // 2:]
+    user_events = to_dict(data_location, users_to_include = set(subset_include))
+
+    assert len(subset_include) == len(user_events.keys())
+    for user, events in user_events.items():
+        assert user in subset_include
+        assert user not in subset_exclude
+
 def test_to_dict_util_errors(data_location):
     # test that a type error is thrown when:
     with pytest.raises(TypeError):
