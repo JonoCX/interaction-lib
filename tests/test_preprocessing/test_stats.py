@@ -136,6 +136,10 @@ def test_time_to_completion(test_data, ground_truth):
     res = stats.calculate_time_statistics()
     # TODO Needs testing
 
+    for user, stat in res.items():
+        toc = stat['time_to_completion']
+        assert ground_truth[user]['time_to_completion'] == pytest.approx(toc, 0.1)
+
 # ----- PAUSE STATISTICS -----
 def test_type_of_pause(test_data):
     stats = Statistics(test_data)
@@ -391,8 +395,8 @@ def test_overall_statistics_single_user(test_data, ground_truth, interaction_eve
     )
     individual_ground_truth_results = ground_truth[user]
 
-    # assert that the length is the same (-1 because GT has 'reach_end')
-    assert len(individual_results) == len(individual_ground_truth_results) - 1
+    # assert that the length is the same (-1 because GT has 'reach_end' and time_to_comp)
+    assert len(individual_results) == len(individual_ground_truth_results) - 2
 
     # time statistics should be approx equal
     time_stats = {'hidden_time', 'raw_session_length', 'session_length'}
