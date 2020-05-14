@@ -6,6 +6,18 @@ class BaseExtractor():
     """ Base class for all of the extractors """
     
     def __init__(self, user_event_dict, completion_point = None, n_jobs = -1):
+        if not isinstance(user_event_dict, dict):
+            raise TypeError('User Event dictionary is not a dict')
+
+        if len(user_event_dict) == 0:
+            raise ValueError('User event dictionary must have at least one value or not None')
+
+        if completion_point and not isinstance(completion_point, str):
+            raise TypeError('completion_point should be a str')
+
+        if not isinstance(n_jobs, int):
+            raise TypeError('n_jobs should be an int')
+
         self.data = self._sort_events(user_event_dict)
         self.completion_point = completion_point
         self.n_jobs = n_jobs

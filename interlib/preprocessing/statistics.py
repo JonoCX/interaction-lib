@@ -20,19 +20,7 @@ class Statistics(BaseExtractor):
         user_event_dict: Dict[str, List[Dict]], 
         completion_point: Optional[str] = None,
         n_jobs: Optional[int] = -1
-    ) -> None:
-        if not isinstance(user_event_dict, dict):
-            raise TypeError('User Event dictionary is not a dict')
-
-        if len(user_event_dict) == 0:
-            raise ValueError('User event dictionary must have at least one value or not None')
-
-        if completion_point and not isinstance(completion_point, str):
-            raise TypeError('completion_point should be a str')
-
-        if not isinstance(n_jobs, int):
-            raise TypeError('n_jobs should be an int')
-        
+    ) -> None:        
         super(Statistics, self).__init__(
             user_event_dict = user_event_dict.copy(),
             completion_point = completion_point,
