@@ -132,3 +132,5 @@ def to_dict(
                 user_events[user] = sorted(events, key = lambda x: x['timestamp'])
 
         return user_events
+
+# TODO: get all users that clicked the start button.

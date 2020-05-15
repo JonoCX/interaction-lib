@@ -1,4 +1,6 @@
 from joblib import cpu_count
+from datetime import datetime as dt
+from typing import Union
 
 import numpy as np
 
@@ -62,3 +64,34 @@ class BaseExtractor():
             if user not in reached_end.keys(): reached_end[user] = False
 
         return reached_end
+
+    def _type_of_pause(
+        self, 
+        timestamp: dt, 
+        next_timestamp: dt
+    ) -> Union[str, int]:
+        """ 
+            Determine the type of pause that has happened based on
+            two timestamps.
+
+            :params timestamp: the current event time
+            :params next_timestamp: the next event time
+            :returns: the type of pause (str) and the difference
+            between the two parameters
+        """
+        if timestamp is None or next_timestamp is None:
+            raise ValueError('Both timestamp parameters have to be initialised')
+        
+        if not isinstance(timestamp, dt) or not isinstance(next_timestamp, dt):
+            raise TypeError('Timestamps is not a datetime object')
+
+        if next_timestamp < timestamp:
+            raise ValueError('Next timestamp cannot be before current timestamps')
+
+        diff = (next_timestamp - timestamp).total_seconds()
+        
+        if 1 <= diff <= 5: return 'SP', diff # 1 -> 5
+        elif 5 < diff <= 15: return 'MP', diff # 6 -> 15
+        elif 15 < diff <= 30: return 'LP', diff # 16 -> 30
+        elif diff > 30: return 'VLP', diff # more than 30
+        else: return 0, diff # base case
