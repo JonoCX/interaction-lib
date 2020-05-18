@@ -1,0 +1,53 @@
+{
+    "959c1a91-8b0f-4178-bc59-70499353204f": {
+        "non_compressed": [
+            "NEC", "MP", "WOC", "SP", "PP", "SP", "LC", "SP", "NEC",
+            "MP", "US", "SP", "VPN", "SP", "US", "VPN", "SP", "US",
+            "VPN", "SP", "VPN", "SP", "VPN", "SP", "NEC", "SP", "NEC",
+            "VLP", "WOC", "SP", "WOC", "MP", "NEC", "MP", "NEC",
+            "LP", "NEC", "LP", "NEC", "MP", "NEC", "MP", "NEC",
+            "MP", "NEC", "MP", "NEC", "LP", "NEC", "MP", "NEC",
+            "MP", "NEC", "LP", "NEC"
+        ]
+    },
+    "0c5b7783-0320-4818-bcb8-e244de363591": {
+        "non_compressed": [
+            "NEC", "SP", "PP", "SP", "LC", "SP", "NEC", "SP", "BVC_H",
+            "VLP", "BVC_V", "SP", "US", "VPN", "SP", "US",
+            "VPN", "SP", "US", "VPN", "SP", "VPN", "SP", "VPN",
+            "SP", "NEC", "SP", "NEC"
+        ]
+    },
+    "b194b76c-7866-4b6d-8502-93ffe6322b64": {
+        "non_compressed": [
+            "NEC", "SP", "PP", "SP", "LC", "SP", "NEC", "SP", "US",
+            "SP", "VPN", "SP", "VPN", "SP", "US", "VPN", "SP", "VPN",
+            "SP", "VPN", "SP", "NEC", "SP", "NEC", "VLP", "NEC",
+            "MP", "NEC", "MP", "SFW", "SP", "SFW", "SP", "NEC",
+            "SP", "SFW", "SFW", "SFW", "NEC", "SFW", "SFW",
+            "NEC", "SFW", "SFW", "NEC", "SFW", "SFW", "SFW",
+            "NEC", "SFW", "SFW", "NEC", "SFW", "SP", "SFW",
+            "SFW", "NEC", "SP", "SFW", "SP", "SFW", "SFW",
+            "NEC", "SP", "SFW", "SP", "NEC", "MP", "SFW",
+            "SP", "SFW", "SP", "NEC", "MP", "SFW", "SP", "SFW",
+            "SP", "NEC", "SP", "SFW", "SFW", "NEC", "MP",
+            "SFW", "SP", "SFW", "SP", "NEC", "SFW", "SP", "PP",
+            "SP", "BVC_H", "VLP", "BVC_V"
+        ],
+        "compressed": [
+            "NEC", "SP", "PP", "SP", "LC", "SP", "NEC", "SP", "US",
+            "SP", "VPN", "SP", "VPN", "SP", "US", "VPN", "SP", "VPN",
+            "SP", "VPN", "SP", "NEC", "SP", "NEC", "VLP", "NEC",
+            "MP", "NEC", "MP", "SFW_1", "SP", "SFW_1", "SP", "NEC",
+            "SP", "SFW_3", "NEC", "SFW_2",
+            "NEC", "SFW_2", "NEC", "SFW_3",
+            "NEC", "SFW_2", "NEC", "SFW_1", "SP", "SFW_2",
+            "NEC", "SP", "SFW_1", "SP", "SFW_2",
+            "NEC", "SP", "SFW_1", "SP", "NEC", "MP", "SFW_1",
+            "SP", "SFW_1", "SP", "NEC", "MP", "SFW_1", "SP", "SFW_1",
+            "SP", "NEC", "SP", "SFW_2", "NEC", "MP",
+            "SFW_1", "SP", "SFW_1", "SP", "NEC", "SFW_1", "SP", "PP",
+            "SP", "BVC_H", "VLP", "BVC_V"
+        ]
+    }
+}

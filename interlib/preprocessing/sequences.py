@@ -7,6 +7,7 @@ from ._event_handler import EventHandler
 
 from datetime import datetime as dt
 from typing import Optional, Union, List, Set, Dict
+from joblib import Parallel, delayed
 
 class Sequences(BaseExtractor):
 
@@ -86,11 +87,6 @@ class Sequences(BaseExtractor):
                             results[user].append(pause_type)
                         previous_timestamp = event['timestamp']
 
-                        if event['action_name'] == 'BROWSER_VISIBILITY_CHANGE':
-                            # TODO: how long did they go hidden? Record that as a part
-                            # of the sequence as well.
-                            pass
-
                         results[user].append(e_handler.process_event(event))
                 
                 if compress:
@@ -118,7 +114,30 @@ class Sequences(BaseExtractor):
                     user_chunk = [user_id], 
                     data_chunk = self.data[user_id],
                     e_handler = e_handler)[user_id]
+            
+            self._sequences = {user: [] for user in self._users}
+            parallel = Parallel(n_jobs = self._num_cpu, verbose = verbose)
 
-""" 
-include the pauses for between events like browser visibility
-"""
+            e_handler = EventHandler(aliases)
+
+            # runs the _seq function in parallel
+            res = parallel(delayed(_seq) (u, e, e_handler) for u, e in self._users_split)
+
+            # unpack the results and add them to the sequences dict
+            for r in res:
+                for u, s in r.items():
+                    self._sequences[u] = s
+
+            return self._sequences
+        else:
+            if user_id is not None:
+                if not isinstance(user_id, str):
+                    raise TypeError('user_id should be a string: {0} (type: {1}'.format(
+                        user_id, type(user_id)
+                ))
+
+                if user_id not in self._users:
+                    raise ValueError('Invalid user_id: {0}'.format(user_id))
+
+                return self._sequences[user_id]
+            return self._sequences

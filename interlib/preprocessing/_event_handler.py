@@ -50,6 +50,13 @@ class EventHandler():
             return self.aliases[action_name] + '_H'
         else:
             return self.aliases[action_name] + '_V'
+
+    def _subtitles(self, event: Dict, action_name: str) -> str:
+        """ """
+        if event['data']['romper_to_state'] == 'showing':
+            return self.aliases[action_name] + '_ON'
+        else:
+            return self.aliases[action_name] + '_OFF'
  
     def process_event(self, event: Dict) -> str:
         """ 
