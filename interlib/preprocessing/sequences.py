@@ -6,8 +6,21 @@ from .base import BaseExtractor
 from ._event_handler import EventHandler
 
 from datetime import datetime as dt
-from typing import Optional, Union, List, Set, Dict
+from collections import Counter, defaultdict
+from typing import Optional, Union, List, Set, Dict, Counter
 from joblib import Parallel, delayed
+from nltk import ngrams
+
+
+class SequenceError(Exception):
+    """ 
+        Custom error to raise when the sequences do not exist
+        but the user is requesting an action to be performed
+        using the sequences.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
 
 class Sequences(BaseExtractor):
 
@@ -134,10 +147,52 @@ class Sequences(BaseExtractor):
                 if not isinstance(user_id, str):
                     raise TypeError('user_id should be a string: {0} (type: {1}'.format(
                         user_id, type(user_id)
-                ))
+                    ))
 
                 if user_id not in self._users:
                     raise ValueError('Invalid user_id: {0}'.format(user_id))
 
                 return self._sequences[user_id]
             return self._sequences
+
+    def get_ngrams(
+        self, 
+        n: Optional[int] = 3,
+        counter: Optional[bool] = False, 
+    ) -> Union[List, Counter]:
+        """ 
+            - if get_sequences hasn't be called, then we propagate an error.
+            - should provide the option to say what the N is
+            - Return just the ngrams or a counter object
+        """
+        if not self._sequences:
+            raise SequenceError(
+                'Sequences have not been extracted, call the '
+                'get_sequences beforehand.'
+            )
+
+        if not isinstance(n, int):
+            raise TypeError('n should be an int: {0} (type: {1}'.format(n, type(n)))
+
+        if not isinstance(counter, bool):
+            raise TypeError(
+                'counter should be a bool: {0} (type: {1})'.format(counter, type(counter)))
+
+        # Get the n-grams for all of the users
+        ngrams_dict = defaultdict(list) # {user_id -> [n_grams, ...], ...}
+        for user, sequence in self._sequences.items():
+            calculate_ngrams = ngrams(sequence, n) # get the ngrams for this sequence
+            for each_gram in calculate_ngrams:
+                ngrams_dict[user].append(each_gram) # append each gram
+
+        counts = Counter() # Count the n-grams (across all n-grams)
+        user_counts = defaultdict(Counter) # Count the n-grams (for each user)
+        for user, all_grams in ngrams_dict.items():
+            # update the counter with the current list of n-grams
+            counts.update(all_grams)
+            user_counts[user].update(all_grams)
+
+        if counter:
+            return ngrams_dict, counts, user_counts
+        else:
+            return ngrams_dict

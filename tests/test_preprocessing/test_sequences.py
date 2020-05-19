@@ -1,6 +1,8 @@
 import pytest 
 import pickle, json, datetime
 
+from collections import Counter, defaultdict
+
 from interlib.preprocessing.sequences import Sequences
 
 # Fixtures
@@ -43,6 +45,17 @@ def aliases():
         "VARIABLE_PANEL_NEXT_CLICKED": "VPN",  "VARIABLE_PANEL_BACK_CLICKED": "VPB",
         "SUBTITLES_BUTTON_CLICKED": "SUB"
     }
+
+@pytest.fixture
+def ngrams():
+    return [
+        ('NEC', 'SP'), ('SP', 'PP'), ('PP', 'SP'), ('SP', 'LC'), ('LC', 'SP'),
+        ('SP', 'NEC'), ('NEC', 'SP'), ('SP', 'BVC_H'), ('BVC_H', 'VLP'),
+        ('VLP', 'BVC_V'), ('BVC_V', 'SP'), ('SP', 'US'), ('US', 'VPN'),
+        ('VPN', 'SP'), ('SP', 'US'), ('US', 'VPN'), ('VPN', 'SP'), ('SP', 'US'),
+        ('US', 'VPN'), ('VPN', 'SP'), ('SP', 'VPN'), ('VPN', 'SP'), ('SP', 'VPN'),
+        ('VPN', 'SP'), ('SP', 'NEC'), ('NEC', 'SP'), ('SP', 'NEC')
+    ]
 
 # ------ COMPRESS SEQUENCE TESTS ------
 def test_compress_sequence(test_data):
@@ -107,3 +120,30 @@ def test_sequences_compressed_single_user(test_data, sequence_data, interaction_
     )
 
     assert extracted_seq == sequence_data['b194b76c-7866-4b6d-8502-93ffe6322b64']['compressed']
+
+def test_sequences_ngrams(test_data, interaction_events, aliases, ngrams):
+    seq = Sequences(test_data, n_jobs = 1)
+    extracted_seq = seq.get_sequences(
+        interaction_events = interaction_events,
+        aliases = aliases
+    )
+
+    user_ngrams = seq.get_ngrams(n = 2)
+    assert ngrams == user_ngrams['0c5b7783-0320-4818-bcb8-e244de363591']
+    
+def test_sequences_ngrams_counts(test_data, interaction_events, aliases, ngrams):
+    seq = Sequences(test_data, n_jobs = 1)
+    extracted_seq = seq.get_sequences(
+        interaction_events = interaction_events,
+        aliases = aliases
+    )
+
+    user_ngrams, counts, user_counts = seq.get_ngrams(n = 2, counter = True)
+
+    # create a counter to automate the testing a bit
+    gt_counts = defaultdict(int)
+    for each_gram in ngrams:
+        gt_counts[each_gram] += 1
+    
+    for pair, value in user_counts['0c5b7783-0320-4818-bcb8-e244de363591'].items():
+        assert gt_counts[pair] == value
