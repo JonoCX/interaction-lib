@@ -25,13 +25,13 @@ class BaseExtractor():
         self.n_jobs = n_jobs
 
         if self.completion_point:
-            self._users_reached_completion_point = self.reached_completion_point()
+            self._users_reached_completion_point = self._reached_completion_point()
 
         if self.n_jobs == -1: self._num_cpu = cpu_count()
         else: self._num_cpu = n_jobs
 
         self._users = set(self.data.keys())
-        self._users_split = self.split_users()
+        self._users_split = self._split_users()
 
     def _sort_events(self, user_event_dict):
         data = {}
@@ -39,7 +39,7 @@ class BaseExtractor():
             data[user] = sorted(events, key = lambda x: x['timestamp'])
         return data
 
-    def split_users(self):
+    def _split_users(self):
         """ """
         split_events = [[] for _ in range(0, self._num_cpu)]
         splits = np.array_split(list(self._users), self._num_cpu)
@@ -50,11 +50,15 @@ class BaseExtractor():
         
         return zip(splits, split_events)
 
-    def reached_completion_point(self):
+    def _reached_completion_point(self):
         """ """
         reached_end = {}
         for user, events in self.data.items():
-            ne_changes = [change for change in events if change['action_type'] == 'STORY_NAVIGATION']
+            ne_changes = [
+                change 
+                for change in events 
+                if change['action_type'] == 'STORY_NAVIGATION'
+            ]
 
             for ne_change in ne_changes:
                 if ne_change['data']['romper_to_state'] == self.completion_point:
