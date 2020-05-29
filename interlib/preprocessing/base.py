@@ -1,13 +1,20 @@
 from joblib import cpu_count
 from datetime import datetime as dt
-from typing import Union
+from typing import Union, Dict, Optional, List
 
 import numpy as np
+
+from ..util.data import _get_users_clicked_start_button
 
 class BaseExtractor():
     """ Base class for all of the extractors """
     
-    def __init__(self, user_event_dict, completion_point = None, n_jobs = -1):
+    def __init__(
+        self, 
+        user_event_dict: Dict[str, List], 
+        completion_point: Optional[str] = None, 
+        n_jobs: Optional[int] = -1
+    ):
         if not isinstance(user_event_dict, dict):
             raise TypeError('User Event dictionary is not a dict')
 
@@ -33,7 +40,7 @@ class BaseExtractor():
         self._users = set(self.data.keys())
         self._users_split = self._split_users()
 
-    def _sort_events(self, user_event_dict):
+    def _sort_events(self, user_event_dict, start_button_filter):
         data = {}
         for user, events in user_event_dict.items():
             data[user] = sorted(events, key = lambda x: x['timestamp'])

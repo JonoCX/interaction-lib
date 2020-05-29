@@ -1,7 +1,6 @@
 """ 
 Utility functions for processing raw data.
 """
-from .helpers import parse_raw_data
 
 from typing import (
     Optional,
@@ -15,13 +14,68 @@ from datetime import datetime as dt
 import json, os
 import numpy as np
 
+def parse_raw_data(raw_data, datetime_format, include_narrative_element):
+    parsed_data = []
+
+    for datum in raw_data:
+        # parse the message data
+        parse_message = json.loads(datum['message'])
+        nested_data = {}
+        for key in parse_message:
+            nested_data[key] = parse_message[key]
+
+        # parse the timestamp into a datetime object
+        timestamp = datum['timestamp']
+        if len(timestamp) < 24: timestamp = timestamp + '.000'
+        timestamp = dt.strptime(timestamp[:23], datetime_format)
+
+        p_data = {
+            'id': datum['id'], 'user': datum['userid'],
+            'timestamp': timestamp, 'action_type': datum['item'],
+            'action_name': datum['action'], 'data': nested_data
+        }
+
+        if include_narrative_element:
+            p_data.update({'narrative_element': datum['narrative_element']})
+
+        parsed_data.append(p_data)
+
+    return parsed_data
+
+
+def parse_timestamp(data, datetime_format = "%Y-%m-%d %H:%M:%S.%f"):
+    for event in data:
+        timestamp = event['timestamp']
+        if len(timestamp) < 24: timestamp = timestamp + '.000'
+        event.update(
+            (k , dt.strptime(timestamp[:23], datetime_format))
+            for k, v in event.items() if k == 'timestamp'
+        )
+    return data
+
+
+def _get_users_clicked_start_button(events):
+    """
+        Fetches the set of users that have clicked the start
+        button. This functionality is needed as the users that
+        haven't clicked the start button haven't agreed to their
+        data being processed.
+
+        :params events: all captured events
+        :returns: a set of users that clicked the start button.
+    """
+    return set([
+        event['user'] for event in events if event['action_name'] == 'START_BUTTON_CLICKED'
+    ])
+
 def to_dict(
     path: str, 
     split: Optional[Union[bool, int]] = None,
     datetime_format: Optional[str] = "%Y-%m-%d %H:%M:%S.%f",
     include_narrative_element_id: Optional[bool] = False,
     sort: Optional[bool] = False,
-    users_to_include: Optional[Set[str]] = None
+    users_to_include: Optional[Set[str]] = None,
+    start_button_filter: Optional[bool] = True
 ) -> Union[Dict[str, List], List[Dict[str, List]]]:
     """
         Utility function to convert a raw dataset (in a json export from DB
@@ -29,15 +83,17 @@ def to_dict(
 
         :params path: the path to the data file (json)
         :params split: whether the data should be split (into 2, default) or
-        the number of splits requested
+            the number of splits requested
         :params datetime_format: the format for the timestamp, compatiable with
-        datetime
+            datetime
         :params include_narrative_element: whether to include narrative element
-        changes
+            changes
         :params sort: whether or not to sort the data by the timestamp.
+        :params users_to_include: a subset of user_ids that you want to extract the data for
+        :params start_button_filter: only include users that have clicked the Start button, 
+            indicating that they have accepted the data collection policy.
         :returns: dictionary of values: {user -> events} or, if split, then
-        a list of dictionaries in [{user -> events}] format
-        TODO: only read in a select set of users.
+            a list of dictionaries in [{user -> events}] format
     """
     if not isinstance(path, str):
         raise TypeError('Path is not a string: {0} ({1})'.format(path, type(path)))
@@ -64,6 +120,9 @@ def to_dict(
             include_narrative_element_id
         )
     
+    if start_button_filter:
+        clicked_start_button = _get_users_clicked_start_button(data)
+
     if split:
         if isinstance(split, bool): # if it's a bool
             split = 2 # then just use 2 as the default
@@ -72,7 +131,7 @@ def to_dict(
         if users_to_include: # if we're looking for a subset
             user_ids = []
             for event in data:
-                if event['user'] in users_to_include:
+                if (event['user'] in users_to_include and event['user'] in clicked_start_button):
                     user_ids.append(event['user'])
         else: # otherwise, it's everyone
             user_ids = [event['user'] for event in data]
@@ -123,7 +182,7 @@ def to_dict(
         # build up the user events dict {user -> [events]}
         user_events = {id: [] for id in user_ids}
         for event in data:
-            if event['user'] in user_ids:
+            if (event['user'] in user_ids and event['user'] in clicked_start_button):
                 user_events[event['user']].append(event)
         
         if sort:
