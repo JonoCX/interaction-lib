@@ -40,7 +40,7 @@ class BaseExtractor():
         self._users = set(self.data.keys())
         self._users_split = self._split_users()
 
-    def _sort_events(self, user_event_dict, start_button_filter):
+    def _sort_events(self, user_event_dict):
         data = {}
         for user, events in user_event_dict.items():
             data[user] = sorted(events, key = lambda x: x['timestamp'])
