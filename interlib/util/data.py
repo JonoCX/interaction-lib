@@ -75,7 +75,8 @@ def to_dict(
     include_narrative_element_id: Optional[bool] = False,
     sort: Optional[bool] = False,
     users_to_include: Optional[Set[str]] = None,
-    start_button_filter: Optional[bool] = True
+    start_button_filter: Optional[bool] = True,
+    already_parsed: Optional[bool] = False
 ) -> Union[Dict[str, List], List[Dict[str, List]]]:
     """
         Utility function to convert a raw dataset (in a json export from DB
@@ -114,11 +115,14 @@ def to_dict(
         raise TypeError('sort is not a bool: {0} ({1})'.format(sort, type(sort)))
 
     with open(path, 'r') as in_file: # read in the data provided
-        data = parse_raw_data( # parse into our internal format at the same time
-            json.load(in_file), 
-            datetime_format, 
-            include_narrative_element_id
-        )
+        if already_parsed:
+            data = parse_timestamp(json.load(in_file), datetime_format)
+        else:
+            data = parse_raw_data( # parse into our internal format at the same time
+                json.load(in_file), 
+                datetime_format, 
+                include_narrative_element_id
+            )
     
     if start_button_filter:
         clicked_start_button = _get_users_clicked_start_button(data)
