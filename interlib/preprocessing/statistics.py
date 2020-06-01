@@ -21,7 +21,13 @@ class Statistics(BaseExtractor):
         completion_point: Optional[str] = None,
         n_jobs: Optional[int] = -1
     ) -> None:        
-        super(Statistics, self).__init__(
+        # super(Statistics, self).__init__(
+        #     user_event_dict = user_event_dict.copy(),
+        #     completion_point = completion_point,
+        #     n_jobs = n_jobs
+        # )
+        BaseExtractor.__init__(
+            self,
             user_event_dict = user_event_dict.copy(),
             completion_point = completion_point,
             n_jobs = n_jobs
@@ -98,7 +104,7 @@ class Statistics(BaseExtractor):
                             hidden_time_completion_point = np.sum(hidden_times)
                             timestamp_reached_completion_point = event['timestamp']
 
-                # record the sum of the hidden times.
+                # record the sum of the hidden times
                 results[user].update({'hidden_time': np.sum(hidden_times)})
 
                 # time to completion statistics
@@ -107,8 +113,14 @@ class Statistics(BaseExtractor):
                         results[user].update({'time_to_completion': 0.0})
                     else:
                         # have to take into account the hidden time.
-                        raw_time = (timestamp_reached_completion_point - timestamps[user][0]).total_seconds()
-                        results[user].update({'time_to_completion': raw_time - hidden_time_completion_point})
+                        raw_time = (
+                            timestamp_reached_completion_point - timestamps[user][0]
+                            ).total_seconds()
+                        results[user].update({
+                            'time_to_completion': raw_time - hidden_time_completion_point
+                        })
+                    # add in whether the user reached teh end
+                    results[user].update({'reach_end': self._users_reached_completion_point[user]})
 
             # calculate the raw session length
             for user, ts in timestamps.items():
@@ -270,7 +282,7 @@ class Statistics(BaseExtractor):
             parallel = Parallel(n_jobs = self._num_cpu, verbose = verbose)
 
             # run the pause statistics job in parallel
-            res = parallel(delayed(_get_pauses) (u, e) for u, e in self._users_split)
+            res = parallel(delayed(_get_pauses) (u, e) for u, e in self._split_users())
 
             # unpack the results and add to the pause statistics dictionary
             for r in res:
@@ -291,7 +303,7 @@ class Statistics(BaseExtractor):
 
     def calculate_event_statistics(
         self,
-        interaction_events: List[str],
+        interaction_events: Set[str],
         include_link_choices: Optional[bool] = False,
         include_user_set_variables: Optional[bool] = False,
         verbose: Optional[int] = 0,
@@ -368,7 +380,7 @@ class Statistics(BaseExtractor):
             parallel = Parallel(n_jobs = self._num_cpu, verbose = verbose)
 
             # run the event extract in parallel
-            results = parallel(delayed(_event_stats) (u, e) for u, e in self._users_split)
+            results = parallel(delayed(_event_stats) (u, e) for u, e in self._split_users())
 
             # unpack the results and add to the event statistics dictionary
             for res in results:
@@ -452,7 +464,8 @@ class Statistics(BaseExtractor):
                     events_subset.append(event)
                 # else if the value isn't between the threshold, the data querk happened
                 # and the event hasn't been previously seen
-                elif (not between_threshold and missing_visibility_change and event['id'] not in previous_subset_ids):
+                elif (not between_threshold and missing_visibility_change and 
+                        event['id'] not in previous_subset_ids):
                     events_subset.append(event)
                     missing_visibility_change = False
 
@@ -522,9 +535,11 @@ class Statistics(BaseExtractor):
             return results
         
         if not isinstance(frequencies, list):
-            raise TypeError('Event Frequencies should be a list of second intervals: {0} ({1}'.format(
-                frequencies, type(frequencies)    
-            ))
+            raise TypeError('Event Frequencies should be a list of second intervals: {0} ({1}'
+                .format(
+                    frequencies, type(frequencies)    
+                )
+            )
         
         if len(frequencies) == 0:
             raise ValueError('Event frequencies cannot be an empty list: {0}'.format(frequencies))
@@ -535,18 +550,20 @@ class Statistics(BaseExtractor):
         if not self._user_event_frequencies:
             if user_id is not None: # if a specific user is requested
                 if not isinstance(user_id, str):
-                    raise TypeError('User ID should be a string: {0} ({1})'.format(user_id, type(user_id)))
+                    raise TypeError('User ID should be a string: {0} ({1})'.format(
+                user_id, type(user_id)))
 
                 if user_id not in self.data.keys():
                     raise ValueError('Invalid user ID: {0}'.format(user_id))
 
-                return _get_frequencies(user_chunk = [user_id], data_chunk = self.data[user_id])[user_id]
+                return _get_frequencies(
+                    user_chunk = [user_id], data_chunk = self.data[user_id])[user_id]
 
             self._user_event_frequencies = {user: {} for user, d in self.data.items()}
             parallel = Parallel(n_jobs = self._num_cpu, verbose = verbose)
 
             # run the event frequencies in parallel
-            results = parallel(delayed(_get_frequencies) (u, e) for u, e in self._users_split)
+            results = parallel(delayed(_get_frequencies) (u, e) for u, e in self._split_users())
 
             # unpack the results and add the frequencies into the dictionary
             for res in results:
@@ -557,7 +574,8 @@ class Statistics(BaseExtractor):
         else:
             if user_id is not None: # if a specific user is requested
                 if not isinstance(user_id, str):
-                    raise TypeError('User ID should be a string: {0} ({1})'.format(user_id, type(user_id)))
+                    raise TypeError('User ID should be a string: {0} ({1})'.format(
+                user_id, type(user_id)))
 
                 if user_id not in self.data.keys():
                     raise ValueError('Invalid User ID: {0}'.format(user_id))
@@ -625,25 +643,20 @@ class Statistics(BaseExtractor):
 
             # ---- The below may not be the most optimal approach -----
 
-            # calculate all of the statistics
+            # first calculate all of the statistics individually
             self.calculate_time_statistics(verbose = verbose)
             self.calculate_pause_statistics(verbose = verbose)
             self.calculate_event_statistics(
                 interaction_events = interaction_events,
                 include_link_choices = include_link_choices,
                 include_user_set_variables = include_user_set_variables,
-                verbose = verbose
-            )
-
-            self._statistics = { # build up the statistics dictionary
-                user: { # for each of the users, get their statistics (O(1))
-                    **self.calculate_time_statistics(user_id = user), 
-                    **self.calculate_pause_statistics(user_id = user),
-                    **self.calculate_event_statistics(
-                        user_id = user, interaction_events = interaction_events
-                    )
-                } for user, d in self.data.items()
-            }
+                verbose = verbose)
+            
+            for user in self._users: # build up the statistics dictionary
+                self._statistics[user] = {}
+                self._statistics[user].update(self._time_statistics[user])
+                self._statistics[user].update(self._pause_statistics[user])
+                self._statistics[user].update(self._event_statistics[user])
 
             return self._statistics
         else: # else, the statistics have been previously calculated

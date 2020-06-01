@@ -54,7 +54,7 @@ class BaseExtractor():
             for u in split:
                 for e in self.data[u]:
                     split_events[idx].append(e)
-        
+
         return zip(splits, split_events)
 
     def _reached_completion_point(self):

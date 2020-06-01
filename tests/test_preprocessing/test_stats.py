@@ -40,6 +40,12 @@ def event_frequencies():
         data = json.load(data_in)
     return data
 
+@pytest.fixture
+def time_stats():
+    return {
+        'hidden_time', 'raw_session_length', 
+        'session_length', 'time_to_completion', 'reach_end'}
+
 # ------ INIT ------
 def test_init(test_data):
     with pytest.raises(ValueError):
@@ -134,7 +140,6 @@ def test_time_to_completion(test_data, ground_truth):
     stats = Statistics(test_data, completion_point = 'Credits')
 
     res = stats.calculate_time_statistics()
-    # TODO Needs testing
 
     for user, stat in res.items():
         toc = stat['time_to_completion']
@@ -375,16 +380,24 @@ def test_event_frequencies_errors(test_data, event_frequencies, interaction_even
 
 
 # ------ OVERALL STATISTICS ------
-def test_overall_statistics(test_data, ground_truth, interaction_events):
-    stats = Statistics(test_data)
-    res = stats.calculate_statistics(interaction_events, verbose = 0)
+def test_overall_statistics(test_data, ground_truth, interaction_events, time_stats):
+    stats = Statistics(test_data, completion_point = 'Credits')
+    res = stats.calculate_statistics(
+        interaction_events, 
+        verbose = 0, 
+        include_link_choices = True, 
+        include_user_set_variables = True
+    )
 
     for user, stat in ground_truth.items():
-        for s, value in stat.items():
-            assert value == ground_truth[user][s]
+        for s_name, s_value in stat.items():
+            if s_name in time_stats:
+                assert s_value == pytest.approx(res[user][s_name], 0.1)
+            else:
+                assert s_value == res[user][s_name]
 
-def test_overall_statistics_single_user(test_data, ground_truth, interaction_events):
-    stats = Statistics(test_data)
+def test_overall_statistics_single_user(test_data, ground_truth, interaction_events, time_stats):
+    stats = Statistics(test_data, completion_point = 'Credits')
     user = '959c1a91-8b0f-4178-bc59-70499353204f'
 
     individual_results = stats.calculate_statistics(
@@ -395,24 +408,15 @@ def test_overall_statistics_single_user(test_data, ground_truth, interaction_eve
     )
     individual_ground_truth_results = ground_truth[user]
 
-    # assert that the length is the same (-1 because GT has 'reach_end' and time_to_comp)
-    assert len(individual_results) == len(individual_ground_truth_results) - 2
-
-    # time statistics should be approx equal
-    time_stats = {'hidden_time', 'raw_session_length', 'session_length'}
-
     for stat, value in individual_results.items():
         if stat in time_stats:
             assert individual_ground_truth_results[stat] == pytest.approx(value, 0.1)
         else:
             assert individual_ground_truth_results[stat] == value
     
-def test_overall_statistics_single_user_without_lcc_usv(test_data, ground_truth, interaction_events):
-    stats = Statistics(test_data)
+def test_overall_statistics_single_user_without_lcc_usv(test_data, ground_truth, interaction_events, time_stats):
+    stats = Statistics(test_data, completion_point = 'Credits')
     user = 'b194b76c-7866-4b6d-8502-93ffe6322b64'
-
-    # time statistics shouldbe approx equal
-    time_stats = {'hidden_time', 'raw_session_length', 'session_length'}
 
     # LCC and USV are included in the ground truth total events by default
     gt_individual = ground_truth[user]
