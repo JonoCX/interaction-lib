@@ -73,7 +73,7 @@ def to_dict(
     split: Optional[Union[bool, int]] = None,
     datetime_format: Optional[str] = "%Y-%m-%d %H:%M:%S.%f",
     include_narrative_element_id: Optional[bool] = False,
-    sort: Optional[bool] = False,
+    sort: Optional[bool] = True,
     users_to_include: Optional[Set[str]] = None,
     start_button_filter: Optional[bool] = True,
     already_parsed: Optional[bool] = False
@@ -183,11 +183,20 @@ def to_dict(
         else:
             user_ids = {event['user'] for event in data}
 
+        if start_button_filter:
+            clicked_start_button = _get_users_clicked_start_button(data)
+
         # build up the user events dict {user -> [events]}
         user_events = {id: [] for id in user_ids}
-        for event in data:
-            if (event['user'] in user_ids and event['user'] in clicked_start_button):
-                user_events[event['user']].append(event)
+
+        if start_button_filter:
+            for event in data:
+                if (event['user'] in user_ids and event['user'] in clicked_start_button):
+                    user_events[event['user']].append(event)
+        else:
+            for event in data:
+                if event['user'] in user_ids:
+                    user_events[event['user']].append(event)
         
         if sort:
             # sort the events by the timestamp

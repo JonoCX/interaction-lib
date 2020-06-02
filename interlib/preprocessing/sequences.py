@@ -134,7 +134,7 @@ class Sequences(BaseExtractor):
             e_handler = EventHandler(aliases)
 
             # runs the _seq function in parallel
-            res = parallel(delayed(_seq) (u, e, e_handler) for u, e in self._users_split)
+            res = parallel(delayed(_seq) (u, e, e_handler) for u, e in self._split_users())
 
             # unpack the results and add them to the sequences dict
             for r in res:
