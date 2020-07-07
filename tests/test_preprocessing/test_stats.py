@@ -84,7 +84,7 @@ def test_split_users_correspond_to_data_chunk(test_data):
 # ----- TIME STATISTICS -----
 def test_time_statistics(test_data, ground_truth):
     stats = Statistics(test_data, n_jobs = -1)
-    res = stats.calculate_time_statistics()
+    res = stats.time_statistics()
     
     # test the the statistics calculated (with some allowance in the precision)
     for u, s in ground_truth.items():
@@ -103,7 +103,7 @@ def test_time_statistics_empty_events(test_data, ground_truth):
     test_data_copy[user_to_delete] = [] # remove their events
 
     stats = Statistics(test_data_copy)
-    res = stats.calculate_time_statistics()
+    res = stats.time_statistics()
 
     assert res[user_to_delete]['raw_session_length'] == 0.0
     assert res[user_to_delete]['hidden_time'] == 0.0
@@ -111,14 +111,14 @@ def test_time_statistics_empty_events(test_data, ground_truth):
 
 def test_that_statistics_are_not_recalculated(test_data):
     stats = Statistics(test_data)
-    res_one = stats.calculate_time_statistics()
-    res_two = stats.calculate_time_statistics()
+    res_one = stats.time_statistics()
+    res_two = stats.time_statistics()
 
     assert res_one == res_two
 
 def test_getting_only_session_length(test_data, ground_truth):
     stats = Statistics(test_data)
-    res = stats.calculate_session_length()
+    res = stats.session_length()
     
     for user, stat in res.items():
         assert ground_truth[user]['session_length'] == pytest.approx(stat, 0.1)
@@ -127,19 +127,19 @@ def test_getting_only_session_length_one_user(test_data, ground_truth):
     stats = Statistics(test_data)
     
     user_to_retrieve = list(test_data.keys())[0]
-    sess_len = stats.calculate_session_length(user_id = user_to_retrieve)
+    sess_len = stats.session_length(user_id = user_to_retrieve)
 
     assert ground_truth[user_to_retrieve]['session_length'] == pytest.approx(sess_len, 0.1)
 
     # test that value error is raised if the user doesn't exist
     with pytest.raises(ValueError):
-        stats.calculate_session_length(user_id = 'user_id')
+        stats.session_length(user_id = 'user_id')
 
 # ----- TIME TO COMPLETION ------
 def test_time_to_completion(test_data, ground_truth):
     stats = Statistics(test_data, completion_point = 'Credits')
 
-    res = stats.calculate_time_statistics()
+    res = stats.time_statistics()
 
     for user, stat in res.items():
         toc = stat['time_to_completion']
@@ -176,7 +176,7 @@ def test_errors_type_of_pause(test_data):
 
 def test_pause_statistics(test_data, ground_truth):
     stats = Statistics(test_data)
-    res = stats.calculate_pause_statistics()
+    res = stats.pause_statistics()
 
     for user, stat in ground_truth.items():
         assert res[user]['SP'] == stat['SP']
@@ -190,7 +190,7 @@ def test_empty_pauses_statistics(test_data):
     test_data_copy[user_to_delete] = [] # remove their events
 
     stats = Statistics(test_data_copy)
-    res = stats.calculate_pause_statistics()
+    res = stats.pause_statistics()
 
     assert res[user_to_delete]['SP'] == 0
     assert res[user_to_delete]['MP'] == 0
@@ -201,7 +201,7 @@ def test_pauses_single_user(test_data, ground_truth):
     stats = Statistics(test_data)
     user = '959c1a91-8b0f-4178-bc59-70499353204f'
     
-    result = stats.calculate_pause_statistics(user_id = user)
+    result = stats.pause_statistics(user_id = user)
 
     assert result['SP'] == ground_truth[user]['SP']
     assert result['MP'] == ground_truth[user]['MP']
@@ -213,27 +213,27 @@ def test_pauses_single_user_errors(test_data):
 
     # test value error when pause statistics haven't already been calculated
     with pytest.raises(ValueError):
-        stats.calculate_pause_statistics(user_id = '150b')
+        stats.pause_statistics(user_id = '150b')
     
     # test type error when something other than a string is passed
     with pytest.raises(TypeError):
-        stats.calculate_pause_statistics(user_id = 150)
+        stats.pause_statistics(user_id = 150)
     
     # calculate statistics to test errors in retrieval 
-    res = stats.calculate_pause_statistics()
+    res = stats.pause_statistics()
 
     # test value error for when the user isn't in the stats or data
     with pytest.raises(ValueError):
-        stats.calculate_pause_statistics(user_id = '150b')
+        stats.pause_statistics(user_id = '150b')
     
     # test type error
     with pytest.raises(TypeError):
-        stats.calculate_pause_statistics(user_id = 150)
+        stats.pause_statistics(user_id = 150)
 
 # ----- EVENT STATISTICS -----
 def test_event_statistics(test_data, ground_truth, interaction_events):
     stats = Statistics(test_data)
-    res = stats.calculate_event_statistics(interaction_events)
+    res = stats.event_statistics(interaction_events)
 
     # assert that the ground truth statistics are the same
     for user, stat in ground_truth.items():
@@ -248,7 +248,7 @@ def test_include_lcc_and_usv(test_data, ground_truth, interaction_events):
         ground_truth[user]['total_events'] += ground_truth[user]['LINK_CHOICE_CLICKED']
         ground_truth[user]['total_events'] += ground_truth[user]['USER_SET_VARIABLE']
 
-    res = stats.calculate_event_statistics(
+    res = stats.event_statistics(
         interaction_events, include_link_choices = True, include_user_set_variables = True
     )
 
@@ -264,7 +264,7 @@ def test_event_statistics_single_user(test_data, ground_truth, interaction_event
     user = '959c1a91-8b0f-4178-bc59-70499353204f'
 
     # test that the stats are calculated for a single user and that they're correct
-    res = stats.calculate_event_statistics(interaction_events, user_id = user)
+    res = stats.event_statistics(interaction_events, user_id = user)
 
     # test that each stat is correct
     for u, stat in ground_truth.items():
@@ -272,7 +272,7 @@ def test_event_statistics_single_user(test_data, ground_truth, interaction_event
             for event in interaction_events:
                 assert res[event] == stat[event]
 
-    res = Statistics(test_data).calculate_event_statistics(
+    res = Statistics(test_data).event_statistics(
         interaction_events, include_link_choices = True, 
         include_user_set_variables = True, user_id = user
     )
@@ -293,30 +293,30 @@ def test_event_statistics_errors(test_data, ground_truth, interaction_events):
     # test type error is thrown when a non-set object is pass for 
     # the interaction events
     with pytest.raises(TypeError):
-        stats.calculate_event_statistics(interaction_events = [])
+        stats.event_statistics(interaction_events = [])
 
     # test that value error is thrown when an empty set is passed
     with pytest.raises(ValueError):
-        stats.calculate_event_statistics(interaction_events = set([]))
+        stats.event_statistics(interaction_events = set([]))
 
     # test that a type error is thrown when a non-string user_id is passed
     with pytest.raises(TypeError):
-        stats.calculate_event_statistics(interaction_events, user_id = 150)
+        stats.event_statistics(interaction_events, user_id = 150)
 
     # test that a value error is thrown when user_id is not in data
     with pytest.raises(ValueError):
-        stats.calculate_event_statistics(interaction_events, user_id = '150b')
+        stats.event_statistics(interaction_events, user_id = '150b')
 
     # calculate the statistics to test for retrieval errors
-    res = stats.calculate_event_statistics(interaction_events)
+    res = stats.event_statistics(interaction_events)
 
     # test that a type error is thrown when user_id is not a string
     with pytest.raises(TypeError):
-        stats.calculate_event_statistics(interaction_events, user_id = 150)
+        stats.event_statistics(interaction_events, user_id = 150)
 
     # test that a value error is thrown when user_id is not in the data
     with pytest.raises(ValueError):
-        stats.calculate_event_statistics(interaction_events, user_id = '150b')
+        stats.event_statistics(interaction_events, user_id = '150b')
 
 # ------ EVENT FREQUENCIES ------
 def test_event_frequencies(test_data, event_frequencies, interaction_events):
@@ -324,7 +324,7 @@ def test_event_frequencies(test_data, event_frequencies, interaction_events):
     frequencies = [v * 60 for v in frequencies]
 
     stats = Statistics(test_data)
-    res = stats.calculate_event_frequencies(frequencies, interaction_events)
+    res = stats.event_frequencies(frequencies, interaction_events)
 
     for user, freq in event_frequencies.items(): # for each of the users and their freq
         test_freq = res[user] # grab the test data for the user
@@ -340,7 +340,7 @@ def test_event_frequencies_single_user(test_data, event_frequencies, interaction
     user = 'be3720be-3da1-419c-b912-cacc3f80a427'
 
     # test that the event frequencies are correct when fetching a single user
-    res = stats.calculate_event_frequencies(frequencies, interaction_events, user_id = user)
+    res = stats.event_frequencies(frequencies, interaction_events, user_id = user)
 
     # for each of the time slices and counts
     for time, counts in event_frequencies[user].items():
@@ -354,29 +354,29 @@ def test_event_frequencies_errors(test_data, event_frequencies, interaction_even
     # test that a type error is thrown when:
     with pytest.raises(TypeError):
         # a non-list type is passed as event frequencies
-        stats.calculate_event_frequencies(frequencies = {}, interaction_events = interaction_events)
+        stats.event_frequencies(frequencies = {}, interaction_events = interaction_events)
 
         # a non integer/float list is passed as event frequencies
-        stats.calculate_event_frequencies(frequencies = ['1', '2'], interaction_events = interaction_events)
+        stats.event_frequencies(frequencies = ['1', '2'], interaction_events = interaction_events)
 
         # a none string type is passed at the user id
-        stats.calculate_event_frequencies(event_frequencies, interaction_events, user_id = 150)
+        stats.event_frequencies(event_frequencies, interaction_events, user_id = 150)
 
         # a none string type is passed after the frequencies have been calculated.
-        stats.calculate_event_frequencies(event_frequencies, interaction_events)
-        stats.calculate_event_frequencies(event_frequencies, interaction_events, user_id = 150)
+        stats.event_frequencies(event_frequencies, interaction_events)
+        stats.event_frequencies(event_frequencies, interaction_events, user_id = 150)
 
     # test that a value error is thrown when:
     with pytest.raises(ValueError):
         # an event frequencies empty list is passed
-        stats.calculate_event_frequencies(frequencies = [], interaction_events = interaction_events)
+        stats.event_frequencies(frequencies = [], interaction_events = interaction_events)
 
         # a user id that is not in the data is passed
-        stats.calculate_event_frequencies(event_frequencies, interaction_events, user_id = '150b')
+        stats.event_frequencies(event_frequencies, interaction_events, user_id = '150b')
 
         # a user id that is not in the data is passed after the freq's have been calculated
-        stats.calculate_event_frequencies(event_frequencies, interaction_events)
-        stats.calculate_event_frequencies(event_frequencies, interaction_events, user_id = '150b')
+        stats.event_frequencies(event_frequencies, interaction_events)
+        stats.event_frequencies(event_frequencies, interaction_events, user_id = '150b')
 
 
 # ------ OVERALL STATISTICS ------

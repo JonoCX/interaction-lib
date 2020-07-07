@@ -3,8 +3,8 @@ import pytest
 import json
 from numpy import delete
 
-from interlib.util.data import to_dict,  _get_users_clicked_start_button
-from interlib.util import parse_raw_data,
+from interlib.util.data import to_dict, _get_users_clicked_start_button
+from interlib.util import parse_raw_data
 
 @pytest.fixture
 def user_ids():
@@ -64,7 +64,7 @@ def test_get_users_clicked_start_button(data_location, user_ids):
         data = parse_raw_data(
             raw_data = json.load(in_file), 
             datetime_format = "%Y-%m-%d %H:%M:%S.%f", 
-            include_narrative_element = False
+            include_narrative_element_id = False
         )
     
     assert len(_get_users_clicked_start_button(data)) == len(user_ids)
@@ -74,7 +74,7 @@ def test_get_users_clicked_start_button_users_without_start_button(data_location
         data = parse_raw_data(
             raw_data = json.load(in_file), 
             datetime_format = "%Y-%m-%d %H:%M:%S.%f", 
-            include_narrative_element = False
+            include_narrative_element_id = False
         )
 
     # remove the start button from a couple of the test users
