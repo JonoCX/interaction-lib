@@ -15,7 +15,20 @@ import json, os
 import numpy as np
 import pandas as pd 
 
-def parse_raw_data(raw_data, datetime_format, include_narrative_element_id):
+def parse_raw_data(
+    raw_data: List[Dict], 
+    datetime_format: str = "%Y-%m-%d %H:%M:%S.%f", 
+    include_narrative_element_id: bool = False
+) -> List[Dict]:
+    """
+        Given a list of raw data, parse it into the format that is used
+        to user events.
+
+        :params raw_data: a list of events (dictionaries)
+        :params datetime_format: the format to parse the timestamp string
+        :params include_narrative_element_id: do you want to include this field
+        :returns: data parsed as a list of events
+    """
     parsed_data = []
 
     for datum in raw_data:
@@ -44,7 +57,17 @@ def parse_raw_data(raw_data, datetime_format, include_narrative_element_id):
     return parsed_data
 
 
-def parse_timestamp(data, datetime_format = "%Y-%m-%d %H:%M:%S.%f"):
+def parse_timestamp(
+    data: List[Dict], 
+    datetime_format: str = "%Y-%m-%d %H:%M:%S.%f"
+) -> List[Dict]:
+    """
+        A function to parse the timestamp field into datetime objects
+
+        :params data: un-parsed data, a list of dictionaries
+        :params datetime_format: the format for the datetime object
+        :returns: updated data parameter
+    """
     for event in data:
         timestamp = event['timestamp']
         if len(timestamp) < 24: timestamp = timestamp + '.000'
@@ -216,7 +239,11 @@ def to_dataframe(
 ) -> pd.DataFrame:
     """ 
         Given a dictionary of results, from the statistics package,
-        convert it into a pandas dataframe format
+        convert it into a pandas dataframe format.
+
+        :params result_dictionary: dictionary created as a result of calculating statistics
+        :params key_name: what the index should be renamed to when the dataframe is reset
+        :returns: pandas DataFrame
     """
     if not isinstance(result_dictionary, dict):
         raise TypeError(f"result_dictionary should be a dictionary and be the output from the " +
