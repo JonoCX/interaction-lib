@@ -147,3 +147,30 @@ def test_sequences_ngrams_counts(test_data, interaction_events, aliases, ngrams)
     
     for pair, value in user_counts['0c5b7783-0320-4818-bcb8-e244de363591'].items():
         assert gt_counts[pair] == value
+
+def test_mismatched_interaction_events_and_aliases(test_data, interaction_events, aliases):
+    seq = Sequences(test_data)
+
+    # remove one element from aliases
+    aliases.pop("NARRATIVE_ELEMENT_CHANGE")
+
+    with pytest.raises(ValueError):
+        seq.get_sequences(interaction_events, aliases)
+
+    # put it back and try again by removing something from interaction events
+    aliases['NARRATIVE_ELEMENT_CHANGE'] = "NEC"
+    interaction_events.remove('NARRATIVE_ELEMENT_CHANGE')
+
+    with pytest.raises(ValueError):
+        seq.get_sequences(interaction_events, aliases)
+
+def test_errors_are_thrown(test_data, interaction_events, aliases):
+    seq = Sequences(test_data)
+
+    with pytest.raises(TypeError):
+        # should throw an error when a list is passed (needs to be a dict)
+        seq.get_sequences(interaction_events = [], aliases = aliases)
+
+        # should throw an error when something other than a dictionary is passed
+        seq.get_sequences(interaction_events = interaction_events, aliases = [])
+

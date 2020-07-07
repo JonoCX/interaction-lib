@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.com/JonoCX/interaction-lib.svg?token=sYqfGmcBzimeQwqRHqma&branch=master)](https://travis-ci.com/JonoCX/interaction-lib)
-
 # InterLib
+
+[![Build Status](https://travis-ci.com/JonoCX/interaction-lib.svg?token=sYqfGmcBzimeQwqRHqma&branch=master)](https://travis-ci.com/JonoCX/interaction-lib)
 
 Interlib is a data processing library created to work with interaction data. In their raw form, the interactions of users tell us little and need to be processed into workable and descriptive format. Using this library, you can extract session statistics, sequences, and perform various common processing tasks that I have found useful in the past.
 
@@ -13,13 +13,13 @@ $ pip install -e git+https://github.com/JonoCX/interaction-lib.git#egg=interlib
 ```
 
 ## Usage
-The library makes the presumption that you have interaction data in a particular format as a json file: 
+The library makes the presumption that you have interaction data in a particular format as a json file:
 
 ```json
 {"<user_1>": [
     {"id": 1,
     "user": "<user_1>",
-    "timestamp": datetime.datetime(2019, 8, 5, 16, 26, 36, 940000),
+    "timestamp": "datetime.datetime(2019, 8, 5, 16, 26, 36, 940000)",
     "action_type": "STORY_NAVIGATION",
     "action_name": "NARRATIVE_ELEMENT_CHANGE",
     "data": {
@@ -30,8 +30,8 @@ The library makes the presumption that you have interaction data in a particular
         "romper_to_state": "Intro Message",
         "current_narrative_element": "null",
         "current_representation": ""
-    }}, {}, ...],
-"<user_2>": [], ...}
+    }}, {}],
+"<user_N>": []}
 ```
 
 The data snippet above is a single event, in a parsed format, recorded in an interactive experience. It is a dictionary of user and a list of events. If you're working with raw data extracted directly from an experience, then it will not be in the above format. As such, the library includes a utility method to convert raw data into a usable format:
@@ -91,7 +91,7 @@ print(user_statistics)
         "NARRATIVE_ELEMENT_CHANGE": 30, "FULLSCREEN_BUTTON_CLICKED": 0, "OVERLAY_BUTTON_CLICKED": 2,
         "SUBTITLES_BUTTON_CLICKED": 0, "PLAY_PAUSE_BUTTON_CLICKED": 0, "LINK_CHOICE_CLICKED": 0,
         "USER_SET_VARIABLE": 0, "total_events": 91},
-"<user_2>": {}, ...}
+"<user_N>": {}, }
 ```
 
 If you want to calculate specific statistics, e.g. the time statistics, the library provides that option:
@@ -154,7 +154,6 @@ print(user_sequences)
 {
     "<user_1>": ["NEC", "MP", "PP", "VLP", "NB", "NB", "NEC", "VLP", ...],
     "<user_2>": [],
-    ...
     "<user_N>": []
 }
 ```
@@ -170,7 +169,7 @@ n_grams = seq.get_ngrams(n = 3) # extract tri-grams
 While the above deals with extracting data representations and features from the data, the ultilty package provides some common functions that may come in handy while working with this type of data. It is by no means exhaustive and it's essentially common functions that I have found useful when processing the data in the past. The main function in `util`, `to_dict`, has already been covered.
 
 ```python
-from interlib.util import parse_raw_data, parse_timestamp
+from interlib.util import parse_raw_data, parse_timestamp, to_dataframe
 ```
 
 **Parsing Raw Data**
@@ -195,8 +194,12 @@ parsed_events = parse_timestamp(
 ```
 
 **To DataFrame**
+To start analysing the data, I recommend using pandas. To help, there is a utility function that can convert the output from the `Statistics` object into a usable dataframe. 
 
-TODO
+```python
+df = to_dataframe(user_statistics)
+```
 
 ## Reference
+
 Publish: TODO :)

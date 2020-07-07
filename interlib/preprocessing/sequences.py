@@ -113,8 +113,17 @@ class Sequences(BaseExtractor):
             return results
 
         # ERROR CHECKING
-        # TODO: Duplicates in aliases
-        # TODO: Events in interaction events but not in aliases
+        if not isinstance(interaction_events, set):
+            raise TypeError(
+                f"interaction_events should be a set, current type: {type(interaction_events)}"
+            )
+        
+        if not isinstance(aliases, dict):
+            raise TypeError(f"aliases should be a dict, current type: {type(aliases)}")
+
+        # check that all interaction events are in the aliases
+        if not set(interaction_events) == set(aliases.keys()):
+            raise ValueError('interaction events and aliases keys should be the same')
 
         if not self._sequences:
             if user_id is not None: 

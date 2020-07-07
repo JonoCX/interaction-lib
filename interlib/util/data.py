@@ -13,6 +13,7 @@ from datetime import datetime as dt
 
 import json, os
 import numpy as np
+import pandas as pd 
 
 def parse_raw_data(raw_data, datetime_format, include_narrative_element_id):
     parsed_data = []
@@ -209,5 +210,18 @@ def to_dict(
 
         return user_events
 
-# TODO: get all users that clicked the start button.
-# TODO: parse statistics into a dataframe format
+def to_dataframe(
+    result_dictionary: Dict[str, Dict], 
+    key_name: Optional[str] = 'user'
+) -> pd.DataFrame:
+    """ 
+        Given a dictionary of results, from the statistics package,
+        convert it into a pandas dataframe format
+    """
+    if not isinstance(result_dictionary, dict):
+        raise TypeError(f"result_dictionary should be a dictionary and be the output from the " +
+                        "Statistics package, current type: {type(result_dictionary)}")
+
+    return pd.DataFrame.from_dict(
+        result_dictionary, orient = 'index'
+    ).reset_index().rename(columns = {'index': key_name})

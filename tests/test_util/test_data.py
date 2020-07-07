@@ -1,10 +1,12 @@
 import pytest 
 
 import json
+import pandas as pd
 from numpy import delete
 
-from interlib.util.data import to_dict, _get_users_clicked_start_button
+from interlib.util.data import to_dict, _get_users_clicked_start_button, to_dataframe
 from interlib.util import parse_raw_data
+from interlib.preprocessing.statistics import Statistics
 
 @pytest.fixture
 def user_ids():
@@ -19,6 +21,20 @@ def user_ids():
 
 @pytest.fixture
 def data_location(): return 'tests/test_data_files/raw_test_data.json'
+
+@pytest.fixture
+def interaction_events():
+    return { # set of user actions we consider
+        'PLAY_PAUSE_BUTTON_CLICKED', 'BACK_BUTTON_CLICKED', 
+        'FULLSCREEN_BUTTON_CLICKED','NEXT_BUTTON_CLICKED', 
+        'SUBTITLES_BUTTON_CLICKED', 'VOLUME_CHANGE',
+        'VIDEO_SCRUBBED', 'SEEK_BACKWARD_BUTTON_CLICKED', 
+        'SEEK_FORWARD_BUTTON_CLICKED', 'VOLUME_MUTE_TOGGLED', 
+        'VARIABLE_PANEL_NEXT_CLICKED', 'VARIABLE_PANEL_BACK_CLICKED',
+        'BROWSER_VISIBILITY_CHANGE', 'WINDOW_ORIENTATION_CHANGE',
+        'NARRATIVE_ELEMENT_CHANGE', 'LINK_CHOICE_CLICKED',
+        'USER_SET_VARIABLE'
+    }
 
 def test_to_dict_util(user_ids, data_location):
     user_events = to_dict(data_location)
@@ -117,4 +133,25 @@ def test_to_dict_util_errors(data_location):
         # a non-existing path is passed
         to_dict(path = 'foo/bar.json')
 
+# ----- to_dataframe tests ------
+def test_to_dataframe(user_ids, data_location, interaction_events):
+    user_events = to_dict(data_location)
+
+    stats = Statistics(user_events)
+    user_statistics = stats.calculate_statistics(interaction_events)
+    df = to_dataframe(user_statistics)
+
+    # check that it's a dataframe that is returned
+    assert type(df) == pd.DataFrame
+
+    # check that the columns are the same as the keys
+    for col in df.columns:
+        if col == 'user': continue # this won't be in the columns
+        assert col in user_statistics['b194b76c-7866-4b6d-8502-93ffe6322b64'].keys()
+
+    # check that the values in the cells match for a user
+    for stat_name, stat_value in user_statistics['b194b76c-7866-4b6d-8502-93ffe6322b64'].items():
+        assert df[df['user'] == 'b194b76c-7866-4b6d-8502-93ffe6322b64'][stat_name].item() == stat_value
+
 # TODO: test for parse raw data
+
