@@ -16,22 +16,22 @@ $ pip install -e git+https://github.com/JonoCX/interaction-lib.git#egg=interlib
 The library makes the presumption that you have interaction data in a particular format as a json file: 
 
 ```json
-{'<user_1>': [
-    {'id': 1, 
-    'user': '<user_1>', 
-    'timestamp': datetime.datetime(2019, 8, 5, 16, 26, 36, 940000), 
-    'action_type': 'STORY_NAVIGATION', 
-    'action_name': 'NARRATIVE_ELEMENT_CHANGE', 
-    'data': {
-        'romper_type': 'STORY_NAVIGATION', 
-        'romper_name': 'NARRATIVE_ELEMENT_CHANGE', 
-        'romper_id': '', 
-        'romper_from_state': 'null', 
-        'romper_to_state': 'Intro Message', 
-        'current_narrative_element': 'null', 
-        'current_representation': ''
+{"<user_1>": [
+    {"id": 1,
+    "user": "<user_1>",
+    "timestamp": datetime.datetime(2019, 8, 5, 16, 26, 36, 940000),
+    "action_type": "STORY_NAVIGATION",
+    "action_name": "NARRATIVE_ELEMENT_CHANGE",
+    "data": {
+        "romper_type": "STORY_NAVIGATION",
+        "romper_name": "NARRATIVE_ELEMENT_CHANGE",
+        "romper_id": "",
+        "romper_from_state": "null",
+        "romper_to_state": "Intro Message",
+        "current_narrative_element": "null",
+        "current_representation": ""
     }}, {}, ...],
-'<user_2>': [], ...}
+"<user_2>": [], ...}
 ```
 
 The data snippet above is a single event, in a parsed format, recorded in an interactive experience. It is a dictionary of user and a list of events. If you're working with raw data extracted directly from an experience, then it will not be in the above format. As such, the library includes a utility method to convert raw data into a usable format:
@@ -81,16 +81,17 @@ stats = Statistics(
 user_statistics = stats.calculate_statistics(interaction_events)
 print(user_statistics)
 ```
+
 ```json
-{'<user_1>': {
-        'hidden_time': 0.0, 'time_to_completion': 1722.157, 'reach_end': True, 'raw_session_length': 1847.197, 
-        'session_length': 1847.197,  'SP': 4, 'MP': 0, 'LP': 4, 'VLP': 25, 
-        'NEXT_BUTTON_CLICKED': 56, 'BACK_BUTTON_CLICKED': 0, 'VIDEO_SCRUBBED': 0, 'VOLUME_CHANGED': 0, 
-        'REPEAT_BUTTON_CLICKED': 1, 'BROWSER_VISIBILITY_CHANGE': 0, 'SWITCH_VIEW_BUTTON_CLICKED': 2, 
-        'NARRATIVE_ELEMENT_CHANGE': 30, 'FULLSCREEN_BUTTON_CLICKED': 0, 'OVERLAY_BUTTON_CLICKED': 2, 
-        'SUBTITLES_BUTTON_CLICKED': 0, 'PLAY_PAUSE_BUTTON_CLICKED': 0, 'LINK_CHOICE_CLICKED': 0, 
-        'USER_SET_VARIABLE': 0, 'total_events': 91},
-'<user_2>': {}, ...}
+{"<user_1>": {
+        "hidden_time": 0.0, "time_to_completion": 1722.157, "reach_end": True, "raw_session_length": 1847.197,
+        "session_length": 1847.197,  "SP": 4, "MP": 0, "LP": 4, "VLP": 25,
+        "NEXT_BUTTON_CLICKED": 56, "BACK_BUTTON_CLICKED": 0, "VIDEO_SCRUBBED": 0, "VOLUME_CHANGED": 0,
+        "REPEAT_BUTTON_CLICKED": 1, "BROWSER_VISIBILITY_CHANGE": 0, "SWITCH_VIEW_BUTTON_CLICKED": 2,
+        "NARRATIVE_ELEMENT_CHANGE": 30, "FULLSCREEN_BUTTON_CLICKED": 0, "OVERLAY_BUTTON_CLICKED": 2,
+        "SUBTITLES_BUTTON_CLICKED": 0, "PLAY_PAUSE_BUTTON_CLICKED": 0, "LINK_CHOICE_CLICKED": 0,
+        "USER_SET_VARIABLE": 0, "total_events": 91},
+"<user_2>": {}, ...}
 ```
 
 If you want to calculate specific statistics, e.g. the time statistics, the library provides that option:
@@ -102,7 +103,7 @@ from interlib.preprocessing.statistics import Statistics
 stats = Statistics(
     user_events,
     completion_point = 'Make step 25', # without this, some statistics cannot be calculated (reached end and time to completion)
-    n_jobs = -1 
+    n_jobs = -1
 )
 interaction_events = set(['NARRATIVE_ELEMENT_CHANGE', 'NEXT_BUTTON_CLICKED', ...]) # set of all user events you want to consider
 
@@ -141,19 +142,20 @@ The way in which this extractor works is very similar to `Statistics` and there 
 
 To extract the sequences (presumes you have already a loaded `user_events` object):
 
-```python 
+```python
 from interlib.preprocessing.sequences import Sequences
 
 seq = Sequences(user_events) # set-up the Sequences object
 user_sequences = seq.get_sequences(interaction_events, aliases)
 print(user_sequences)
 ```
+
 ```json
 {
-    '<user_1>': ['NEC', 'MP', 'PP', 'VLP', 'NB', 'NB', 'NEC', 'VLP', 'NB', 'NEC', 'NB', 'VLP', 'NB', 'NB', 'NEC', 'VLP', ...], 
-    '<user_2>': [],
+    "<user_1>": ["NEC", "MP", "PP", "VLP", "NB", "NB", "NEC", "VLP", ...],
+    "<user_2>": [],
     ...
-    '<user_N>': []
+    "<user_N>": []
 }
 ```
 
@@ -170,6 +172,7 @@ While the above deals with extracting data representations and features from the
 ```python
 from interlib.util import parse_raw_data, parse_timestamp
 ```
+
 **Parsing Raw Data**
 If you have a list of raw events, then you're able to parse these into a format that is recognisable by the library:
 
