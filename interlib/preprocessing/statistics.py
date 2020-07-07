@@ -39,7 +39,7 @@ class Statistics(BaseExtractor):
         self._event_statistics = {}
         self._user_event_frequencies = {}
 
-    def calculate_time_statistics(
+    def time_statistics(
         self, 
         verbose: Optional[int] = 0, 
         user_id: Optional[str] = None
@@ -168,7 +168,7 @@ class Statistics(BaseExtractor):
                 return self._time_statistics[user_id]
             return self._time_statistics
 
-    def calculate_session_length(
+    def session_length(
         self, 
         user_id: Optional[str] = None, 
         verbose: Optional[int] = 0
@@ -190,7 +190,7 @@ class Statistics(BaseExtractor):
                 return self._time_statistics[user_id]['session_length']
             return {user: stat['session_length'] for user, stat in self._time_statistics.items()}
         else:
-            self.calculate_time_statistics(verbose = verbose)
+            self.time_statistics(verbose = verbose)
 
             if user_id:
                 if user_id not in self._time_statistics.keys():
@@ -236,7 +236,7 @@ class Statistics(BaseExtractor):
             'LP': pauses['LP'], 'VLP': pauses['VLP']
         }
         
-    def calculate_pause_statistics(
+    def pause_statistics(
         self, 
         verbose: Optional[int] = 0, 
         user_id: Optional[str] = None
@@ -301,7 +301,7 @@ class Statistics(BaseExtractor):
                 return self._pause_statistics[user_id]
             return self._pause_statistics
 
-    def calculate_event_statistics(
+    def event_statistics(
         self,
         interaction_events: Set[str],
         include_link_choices: Optional[bool] = False,
@@ -407,7 +407,7 @@ class Statistics(BaseExtractor):
                 return self._event_statistics[user_id]
             return self._event_statistics
 
-    def calculate_event_frequencies(
+    def event_frequencies(
         self, 
         frequencies: List[Union[int, float]],
         interaction_events: List[str], 
@@ -637,9 +637,9 @@ class Statistics(BaseExtractor):
 
                 # return a dict of results = {total_events: 24, pp: 1, etc..}
                 individual_results = {
-                    **self.calculate_time_statistics(user_id = user_id, verbose = verbose),
-                    **self.calculate_pause_statistics(user_id = user_id, verbose = verbose),
-                    **self.calculate_event_statistics(
+                    **self.time_statistics(user_id = user_id, verbose = verbose),
+                    **self.pause_statistics(user_id = user_id, verbose = verbose),
+                    **self.event_statistics(
                         interaction_events, user_id = user_id,
                         include_link_choices = include_link_choices,
                         include_user_set_variables = include_user_set_variables, 
@@ -652,9 +652,9 @@ class Statistics(BaseExtractor):
             # ---- The below may not be the most optimal approach -----
 
             # first calculate all of the statistics individually
-            self.calculate_time_statistics(verbose = verbose)
-            self.calculate_pause_statistics(verbose = verbose)
-            self.calculate_event_statistics(
+            self.time_statistics(verbose = verbose)
+            self.pause_statistics(verbose = verbose)
+            self.event_statistics(
                 interaction_events = interaction_events,
                 include_link_choices = include_link_choices,
                 include_user_set_variables = include_user_set_variables,

@@ -3,8 +3,8 @@ import pytest
 import json
 from numpy import delete
 
-from interlib.util.data import to_dict, _get_users_clicked_start_button
-from interlib.util import parse_raw_data
+from interlib.util.data import to_dict,  _get_users_clicked_start_button
+from interlib.util import parse_raw_data,
 
 @pytest.fixture
 def user_ids():
@@ -116,3 +116,5 @@ def test_to_dict_util_errors(data_location):
     with pytest.raises(ValueError):
         # a non-existing path is passed
         to_dict(path = 'foo/bar.json')
+
+# TODO: test for parse raw data

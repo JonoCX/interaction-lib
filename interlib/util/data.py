@@ -14,7 +14,7 @@ from datetime import datetime as dt
 import json, os
 import numpy as np
 
-def parse_raw_data(raw_data, datetime_format, include_narrative_element):
+def parse_raw_data(raw_data, datetime_format, include_narrative_element_id):
     parsed_data = []
 
     for datum in raw_data:
@@ -35,7 +35,7 @@ def parse_raw_data(raw_data, datetime_format, include_narrative_element):
             'action_name': datum['action'], 'data': nested_data
         }
 
-        if include_narrative_element:
+        if include_narrative_element_id:
             p_data.update({'narrative_element': datum['narrative_element']})
 
         parsed_data.append(p_data)
@@ -210,3 +210,4 @@ def to_dict(
         return user_events
 
 # TODO: get all users that clicked the start button.
+# TODO: parse statistics into a dataframe format

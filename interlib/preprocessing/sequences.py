@@ -112,6 +112,10 @@ class Sequences(BaseExtractor):
 
             return results
 
+        # ERROR CHECKING
+        # TODO: Duplicates in aliases
+        # TODO: Events in interaction events but not in aliases
+
         if not self._sequences:
             if user_id is not None: 
                 if not isinstance(user_id, str):
