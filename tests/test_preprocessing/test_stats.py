@@ -409,6 +409,8 @@ def test_overall_statistics_single_user(test_data, ground_truth, interaction_eve
     individual_ground_truth_results = ground_truth[user]
 
     for stat, value in individual_results.items():
+        if '_freq' in stat: continue # we'll test this further down
+
         if stat in time_stats:
             assert individual_ground_truth_results[stat] == pytest.approx(value, 0.1)
         else:
@@ -427,6 +429,8 @@ def test_overall_statistics_single_user_without_lcc_usv(test_data, ground_truth,
     res_individual = stats.calculate_statistics(interaction_events, user_id = user)
 
     for stat, value in res_individual.items():
+        if '_freq' in stat: continue # we'll test this further down
+        
         if stat in time_stats:
             assert gt_individual[stat] == pytest.approx(value, 0.1)
         else:

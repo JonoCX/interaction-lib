@@ -352,14 +352,21 @@ class Statistics(BaseExtractor):
                 if not include_user_set_variables:
                     total_events -= ua_counter['USER_SET_VARIABLE']
 
+                # calculate relative frequency for each event
+                ua_relative_frequency = defaultdict(float)
+                for event, count in ua_counter.items():
+                    ua_relative_frequency[event + '_freq'] = (count / total_events) * 100 
+
                 results[user].update(dict(ua_counter))
+                results[user].update(dict(ua_relative_frequency))
                 results[user].update({'total_events': total_events})
                     
             return results 
 
         # check that the interaction events is a set
         if not isinstance(interaction_events, set):
-            raise TypeError('Interaction events should be a set of actions: {0}'.format(interaction_events))
+            raise TypeError(
+                'Interaction events should be a set of actions: {0}'.format(interaction_events))
     
         # check that the interaction events set contains something
         if len(interaction_events) == 0:
@@ -374,7 +381,8 @@ class Statistics(BaseExtractor):
                     raise ValueError('Invalid user ID: {0}'.format(user_id))
 
                 # calculate the event statistics for that user
-                return _event_stats(user_chunk = [user_id], data_chunk = self.data[user_id])[user_id]
+                return _event_stats(
+                    user_chunk = [user_id], data_chunk = self.data[user_id])[user_id]
             
             self._event_statistics = {user: {} for user, d in self.data.items()}
             parallel = Parallel(n_jobs = self._num_cpu, verbose = verbose)

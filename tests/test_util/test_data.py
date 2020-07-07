@@ -41,6 +41,13 @@ def test_to_dict_split_util(user_ids, data_location):
         assert isinstance(chunk, dict)
         assert all(isinstance(x, list) for u, x in chunk.items())
 
+        # check whether they are sorted
+        for user, sorted_events in chunk.items():
+            assert all(
+                sorted_events[i]['timestamp'] <= sorted_events[i + 1]['timestamp'] 
+                for i in range(len(sorted_events) - 1)
+            )
+
 def test_to_dict_user_subset(user_ids, data_location):
     user_ids = list(user_ids)
     subset_include = user_ids[:len(user_ids) // 2]

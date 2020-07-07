@@ -168,8 +168,12 @@ def to_dict(
                     user_events[event['user']].append(event)
             
             if sort: # if sort, then sort by timestamp
-                for user, event in user_events.copy().items():
-                    user_events[user] = sorted(events, key = lambda x: x['timestamp'])
+                for user in user_events.copy().keys():
+                    user_events[user] = sorted(user_events[user], key = lambda x: x['timestamp'])
+
+
+                # for user, event in user_events.copy().items():
+                #     user_events[user] = sorted(user_events[user], key = lambda x: x['timestamp'])
             
             # build the returned list
             events.append(user_events)
