@@ -15,6 +15,7 @@ import json, os
 import numpy as np
 import pandas as pd 
 
+
 def parse_raw_data(
     raw_data: List[Dict], 
     datetime_format: str = "%Y-%m-%d %H:%M:%S.%f", 
@@ -252,3 +253,63 @@ def to_dataframe(
     return pd.DataFrame.from_dict(
         result_dictionary, orient = 'index'
     ).reset_index().rename(columns = {'index': key_name})
+
+# TODO function to get the set of users that reached a particular
+# point in the story (check seen_introduction in stats_time_thresholds.py)
+
+def reached_point(
+    user_events: Dict[str, List],
+    point: str,
+    filter: Optional[bool] = False
+) -> Union[Set[str], Dict[str, List]]:
+    """
+        From a dictionary (user_id mapped to a list of events), find
+        which users have passed through a particular point in the experience.
+
+        The function also provides the ability to filter out users 
+        that haven't passed through this point. This will return an updated
+        version of the user_events parameter
+
+        :params user_events:
+        :params point:
+        :params filter:
+        :returns:
+    """
+    if not isinstance(user_events, dict): 
+        raise ValueError(f"user_events must be a dictionary (current type: {type(user_events)}")
+    elif len(user_events) == 0:
+        raise ValueError(f"user_events is empty (len = {len(user_events)}")
+    elif not all(isinstance(l, list) for l in user_events.values()):
+        raise ValueError(f"the values in user_events should be lists of events")
+
+    users_to_remove = set([])
+    for user, events in user_events.items():
+        # collect the narrative element changes into a list
+        ne_changes = [nec for nec in events if nec['action_type'] == 'STORY_NAVIGATION']
+
+        # indicators for: moving to the node and out of the node
+        to_state = False 
+        from_state = False 
+
+        for nec in ne_changes:
+            if nec['data']['romper_to_state'] == point:
+                to_state = True 
+            if nec['data']['romper_from_state'] == point:
+                from_state = True 
+        
+        # if either are false, then the user didn't pass through this point
+        if not to_state or not from_state:
+            users_to_remove.add(user)
+
+    # if we're asked to filter users out
+    if filter:
+        # then we'll remove these users from a copy of the events (avoids mutating the original)
+        user_events_copy = user_events.copy()
+        for user in users_to_remove:
+            user_events_copy.pop(user, None)
+        
+        return user_events_copy
+    
+    # otherwise, we need to get the difference and return the users that passed through.
+    return set(user_events.keys()) - users_to_remove
+

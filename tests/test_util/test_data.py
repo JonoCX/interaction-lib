@@ -4,7 +4,7 @@ import json
 import pandas as pd
 from numpy import delete
 
-from interlib.util.data import to_dict, _get_users_clicked_start_button, to_dataframe
+from interlib.util.data import to_dict, _get_users_clicked_start_button, to_dataframe, reached_point
 from interlib.util import parse_raw_data
 from interlib.preprocessing.statistics import Statistics
 
@@ -152,6 +152,29 @@ def test_to_dataframe(user_ids, data_location, interaction_events):
     # check that the values in the cells match for a user
     for stat_name, stat_value in user_statistics['b194b76c-7866-4b6d-8502-93ffe6322b64'].items():
         assert df[df['user'] == 'b194b76c-7866-4b6d-8502-93ffe6322b64'][stat_name].item() == stat_value
+
+# ----- reached point test -----
+def test_reached_point(data_location):
+    user_events = to_dict(data_location)
+
+    point = 'CH00_Introduction'
+    expected_users_removed = 'be3720be-3da1-419c-b912-cacc3f80a427'
+
+    reached_point_users = reached_point(user_events, point)
+
+    assert len(reached_point_users) == len(user_events.keys()) - 1
+    assert expected_users_removed not in reached_point_users
+
+def test_reached_point_filter(data_location):
+    user_events = to_dict(data_location)
+
+    point = 'CH00_Introduction'
+    expected_users_removed = 'be3720be-3da1-419c-b912-cacc3f80a427'
+
+    updated_user_events = reached_point(user_events, point, filter = True)
+
+    assert len(updated_user_events.keys()) == len(user_events.keys()) - 1
+    assert expected_users_removed not in updated_user_events.keys()
 
 # TODO: test for parse raw data
 
