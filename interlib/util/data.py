@@ -34,7 +34,10 @@ def parse_raw_data(
 
     for datum in raw_data:
         # parse the message data
-        parse_message = json.loads(datum['message'])
+        if 'message' in datum.keys():
+            parse_message = json.loads(datum['message'])
+        else:
+            parse_message = json.loads(datum['data'])
         nested_data = {}
         for key in parse_message:
             nested_data[key] = parse_message[key]
