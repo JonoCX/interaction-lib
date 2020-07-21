@@ -96,6 +96,7 @@ def test_sequences_single_user(test_data, sequence_data, interaction_events, ali
         aliases = aliases,
         user_id = '0c5b7783-0320-4818-bcb8-e244de363591'
     )
+    print(extracted_seq)
 
     assert extracted_seq == sequence_data['0c5b7783-0320-4818-bcb8-e244de363591']['non_compressed']
 
@@ -105,6 +106,7 @@ def test_sequences_all_users(test_data, sequence_data, interaction_events, alias
         interaction_events = interaction_events,
         aliases = aliases
     )
+    print(extracted_seqs)
 
     for user, seq_types in sequence_data.items():
         assert extracted_seqs[user] == seq_types['non_compressed']
