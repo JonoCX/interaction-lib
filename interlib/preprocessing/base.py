@@ -106,11 +106,3 @@ class BaseExtractor():
         elif 15 < diff <= 30: return 'LP', diff # 16 -> 30
         elif diff > 30: return 'VLP', diff # more than 30
         else: return 0, diff # base case
-
-    def _type_of_nec_dwell(self, timestamp: dt, next_timestamp: dt) -> Union[str, float]:
-        diff = (next_timestamp - timestamp).total_seconds()
-
-        if 1 <= diff < 10: return 'S', diff 
-        elif 10 <= diff <= 40: return 'M', diff
-        elif diff > 40: return 'L', diff
-        else: return 0, diff

@@ -93,7 +93,6 @@ class Sequences(BaseExtractor):
                     first_event_ts = None
 
                 previous_timestamp = None 
-                previous_timestamp_nec = None
                 for idx, event in enumerate(events): # for each event in the users events
                     if idx == 0: # if it's the first timestamp
                         first_event_ts = event['timestamp']
@@ -103,35 +102,17 @@ class Sequences(BaseExtractor):
                         
                         # pauses are tracked between the events that are being tracked and
                         # that are to be included in the sequence
-                        if (previous_timestamp == None and 
-                            event['action_name'] != nec): 
+                        if previous_timestamp == None: 
                             previous_timestamp = event['timestamp']
-                        elif (previous_timestamp_nec == None and 
-                            event['action_name'] == nec):
-                            previous_timestamp_nec = event['timestamp']
                         
-                        if event['action_name'] == nec:
-                            nec_dwell_type, _ = self._type_of_nec_dwell(
-                                previous_timestamp_nec, event['timestamp']
-                            )
-                            if nec_dwell_type != 0:
-                                results[user].append(
-                                    e_handler.process_event(event) + '_' + nec_dwell_type
-                                )
-                            else:
-                                results[user].append(
-                                    e_handler.process_event(event)
-                                )
-                            previous_timestamp_nec = event['timestamp']
-                        else:
-                            pause_type, _ = self._type_of_pause(
-                                previous_timestamp, event['timestamp']
-                            )
-                            if pause_type != 0:
-                                results[user].append(pause_type)
-                            previous_timestamp = event['timestamp']
+                        pause_type, _ = self._type_of_pause(
+                            previous_timestamp, event['timestamp']
+                        )
+                        if pause_type != 0:
+                            results[user].append(pause_type)
+                        previous_timestamp = event['timestamp']
 
-                            results[user].append(e_handler.process_event(event))
+                        results[user].append(e_handler.process_event(event))
                     
                     if (time_threshold and 
                         (event['timestamp'] - first_event_ts).total_seconds() > time_threshold):
