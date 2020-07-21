@@ -71,10 +71,12 @@ class Sequences(BaseExtractor):
         compress: Optional[bool] = True,
         compress_event: Optional[str] = None,
         categories: Optional[Dict[str, str]] = None,
+        time_threshold: Optional[Union[float, int]] = None,
         verbose: Optional[int] = 0
     ) -> Dict[str, Dict]:
         """ 
         
+        :params time_threshold: upper limit in seconds (not minutes!)
         """
         def _seq(user_chunk, data_chunk, e_handler):
             user_dict = {user: [] for user in user_chunk}
@@ -86,8 +88,14 @@ class Sequences(BaseExtractor):
                 if len(events) < 1: # if there is no events, just continue
                     continue
                 
+                if time_threshold:
+                    first_event_ts = None
+
                 previous_timestamp = None
-                for event in events: # for each event in the users events
+                for idx, event in enumerate(events): # for each event in the users events
+                    if idx == 0: # if it's the first timestamp
+                        first_event_ts = event['timestamp']
+                    
                     # if the event is one that should be captured
                     if event['action_name'] in interaction_events:
                         
@@ -101,6 +109,11 @@ class Sequences(BaseExtractor):
                         previous_timestamp = event['timestamp']
 
                         results[user].append(e_handler.process_event(event))
+                    
+                    if (time_threshold and 
+                        (event['timestamp'] - first_event_ts).total_seconds() > time_threshold):
+                        # if we've hit the threshold provided
+                        break
                 
                 if compress:
                     results[user] = self._compress_events(results[user], compress_event)

@@ -174,3 +174,11 @@ def test_errors_are_thrown(test_data, interaction_events, aliases):
         # should throw an error when something other than a dictionary is passed
         seq.get_sequences(interaction_events = interaction_events, aliases = [])
 
+# def test_sequence_time_threshold(test_data, interaction_events, aliases):
+#     seq = Sequences(test_data, n_jobs = 1)
+#     extracted_seq = seq.get_sequences(
+#         interaction_events = interaction_events,
+#         aliases = aliases,
+#         time_threshold = 30
+#     )
+#     print(extracted_seq)
