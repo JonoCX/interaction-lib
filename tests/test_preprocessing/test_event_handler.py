@@ -64,11 +64,36 @@ def test_browser_visibility_change(aliases):
     test_event['data']['romper_to_state'] = 'visible'
     assert eh.process_event(test_event) == 'BVC_V'
 
+def test_window_orientation_change(aliases):
+    eh = EventHandler(aliases)
+    test_event = {
+        'action_name': 'WINDOW_ORIENTATION_CHANGE',
+        'data': {'romper_to_state': 90}
+    }
+    assert eh.process_event(test_event) == 'WOC_H'
+
+    test_event['data']['romper_to_state'] = -90
+    assert eh.process_event(test_event) == 'WOC_H'
+
+    # to vertical
+    test_event['data']['romper_to_state'] = 0
+    assert eh.process_event(test_event) == 'WOC_V'
+
+    test_event['data']['romper_to_state'] = 180
+    assert eh.process_event(test_event) == 'WOC_V'
+
+    # odd case
+    test_event['data']['romper_to_state'] = ""
+    assert eh.process_event(test_event) == 'WOC'
+
 def test_all_events(aliases):
     eh = EventHandler(aliases)
     test_events = [{'action_name': ev} for ev in aliases.keys()]
 
-    exclude = {'VOLUME_CHANGED', 'FULLSCREEN_BUTTON_CLICKED', 'BROWSER_VISIBILITY_CHANGE'}
+    exclude = {
+        'VOLUME_CHANGED', 'FULLSCREEN_BUTTON_CLICKED', 
+        'BROWSER_VISIBILITY_CHANGE', 'WINDOW_ORIENTATION_CHANGE'
+    }
     for ev in test_events:
         if ev['action_name'] in exclude:
             continue

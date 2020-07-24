@@ -1,10 +1,10 @@
 {
     "959c1a91-8b0f-4178-bc59-70499353204f": {
         "non_compressed": [
-            "NEC", "MP", "WOC", "SP", "PP", "SP", "LC", "SP", "NEC",
+            "NEC", "MP", "WOC_H", "SP", "PP", "SP", "LC", "SP", "NEC",
             "MP", "US", "SP", "VPN", "SP", "US", "VPN", "SP", "US",
             "VPN", "SP", "VPN", "SP", "VPN", "SP", "NEC", "SP", "NEC",
-            "VLP", "WOC", "SP", "WOC", "MP", "NEC", "MP", "NEC",
+            "VLP", "WOC_V", "SP", "WOC_H", "MP", "NEC", "MP", "NEC",
             "LP", "NEC", "LP", "NEC", "MP", "NEC", "MP", "NEC",
             "MP", "NEC", "MP", "NEC", "LP", "NEC", "MP", "NEC",
             "MP", "NEC", "LP", "NEC"

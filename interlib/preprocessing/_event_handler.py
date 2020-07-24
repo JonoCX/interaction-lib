@@ -57,6 +57,17 @@ class EventHandler():
             return self.aliases[action_name] + '_ON'
         else:
             return self.aliases[action_name] + '_OFF'
+
+    def _window_orientation_change(self, event: Dict, action_name: str) -> str: 
+        """
+        """
+        # states: not_set, 90, -90, 0, 180, "", or 65446 (happens twice)
+        if event['data']['romper_to_state'] in {90, -90}:
+            return self.aliases[action_name] + '_H' # horizontal
+        elif event['data']['romper_to_state'] in {0, 180}:
+            return self.aliases[action_name] + '_V' # vertical
+        else: # the odd case where it's near horizontal or vertical ("" or 65446)
+            return self.aliases[action_name]
  
     def process_event(self, event: Dict) -> str:
         """ 
@@ -74,6 +85,8 @@ class EventHandler():
             return self._fullscreen(event, action_name)
         elif action_name == 'BROWSER_VISIBILITY_CHANGE':
             return self._browser_visibility_change(event, action_name)
+        elif action_name == 'WINDOW_ORIENTATION_CHANGE':
+            return self._window_orientation_change(event, action_name)
         else:
             return self.aliases[action_name]
 
