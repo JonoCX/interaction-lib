@@ -26,7 +26,8 @@
         "VARIABLE_PANEL_BACK_CLICKED": 0,
         "BROWSER_VISIBILITY_CHANGE": 0,
         "WINDOW_ORIENTATION_CHANGE": 3,
-        "USER_SET_VARIABLE": 3
+        "USER_SET_VARIABLE": 3,
+        "last_ne_seen": "Inf_Regional_Factoid copy"
     },
     "b194b76c-7866-4b6d-8502-93ffe6322b64": {
         "session_length": 172,
@@ -55,7 +56,8 @@
         "VARIABLE_PANEL_BACK_CLICKED": 0,
         "BROWSER_VISIBILITY_CHANGE": 2,
         "WINDOW_ORIENTATION_CHANGE": 0,
-        "USER_SET_VARIABLE": 2
+        "USER_SET_VARIABLE": 2,
+        "last_ne_seen": "Inf_CH01C"
     },
     "7b06a205-c793-4bdf-8533-013dc092d341": {
         "session_length": 320,

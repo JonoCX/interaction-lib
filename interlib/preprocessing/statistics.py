@@ -120,7 +120,10 @@ class Statistics(BaseExtractor):
                             'time_to_completion': raw_time - hidden_time_completion_point
                         })
                     # add in whether the user reached teh end
-                    results[user].update({'reach_end': self._users_reached_completion_point[user]})
+                    results[user].update({
+                        'reach_end': self._users_reached_completion_point[user],
+                        'last_ne_seen': self.last_ne[user]
+                    })
 
             # calculate the raw session length
             for user, ts in timestamps.items():

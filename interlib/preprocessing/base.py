@@ -32,7 +32,7 @@ class BaseExtractor():
         self.n_jobs = n_jobs
 
         if self.completion_point:
-            self._users_reached_completion_point = self._reached_completion_point()
+            self._users_reached_completion_point, self.last_ne = self._reached_completion_point()
 
         if self.n_jobs == -1: self._num_cpu = cpu_count()
         else: self._num_cpu = n_jobs
@@ -60,12 +60,16 @@ class BaseExtractor():
     def _reached_completion_point(self):
         """ """
         reached_end = {}
+        last_narrative_element_seen = {}
         for user, events in self.data.items():
             ne_changes = [
                 change 
                 for change in events 
                 if change['action_type'] == 'STORY_NAVIGATION'
             ]
+
+            if len(ne_changes) > 0:
+                last_narrative_element_seen[user] = ne_changes[-1]['data']['romper_to_state']
 
             for ne_change in ne_changes:
                 if ne_change['data']['romper_to_state'] == self.completion_point:
@@ -74,7 +78,7 @@ class BaseExtractor():
             
             if user not in reached_end.keys(): reached_end[user] = False
 
-        return reached_end
+        return reached_end, last_narrative_element_seen
 
     def _type_of_pause(
         self, 
