@@ -4,7 +4,8 @@ import json
 import pandas as pd
 from numpy import delete
 
-from interlib.util.data import to_dict, _get_users_clicked_start_button, to_dataframe, reached_point
+from interlib.util.data import to_dict, _get_users_clicked_start_button
+from interlib.util.data import to_dataframe, reached_point, events_between_two_points
 from interlib.util import parse_raw_data
 from interlib.preprocessing.statistics import Statistics
 
@@ -175,6 +176,67 @@ def test_reached_point_filter(data_location):
 
     assert len(updated_user_events.keys()) == len(user_events.keys()) - 1
     assert expected_users_removed not in updated_user_events.keys()
+
+# ----- events between two points test -----
+def test_events_between_two_points(data_location):
+    user_events = to_dict(data_location)
+
+    users_reached_end = set([ # determined from mysql query on data
+        'b4588353-cecb-4dee-ae8b-833d7888dec5',
+        'b1728dff-021d-4b82-9afc-8a29264b53e4',
+        '959c1a91-8b0f-4178-bc59-70499353204f',
+        'b194b76c-7866-4b6d-8502-93ffe6322b64'
+    ])
+
+    start = 'CH00_Introduction'
+    end = '09_Ronaldo'
+
+    updated_events = events_between_two_points(user_events, start, end)
+
+    for user, events in updated_events.items():
+        if len(events) > 0:
+            if user in users_reached_end: # these are users that got to the end point
+                assert (events[0]['data']['romper_to_state'] == start and 
+                        events[-1]['data']['romper_to_state'] == end)
+            else:
+                assert events[0]['data']['romper_to_state'] == start
+
+
+def test_events_between_two_points_alternative_end(data_location):
+    user_events = to_dict(data_location)
+    users_reached_end = set([ # determined from mysql query on raw data
+        '21013769-f703-4531-9293-f2f4e114c248',
+        '62d860e2-11ec-4a7c-82e2-c9bd3e369c83'
+    ])
+
+    start = 'CH00_Introduction'
+    end = '05: Selena'
+
+    updated_events = events_between_two_points(user_events, start, end)
+
+    for user, events in updated_events.items():
+        if len(events) > 0:
+            if user in users_reached_end: # these are users that got to the end point
+                assert (events[0]['data']['romper_to_state'] == start and 
+                        events[-1]['data']['romper_to_state'] == end)
+            else:
+                assert events[0]['data']['romper_to_state'] == start
+    
+
+def test_events_between_two_points_filter(data_location):
+    user_events = to_dict(data_location)
+
+    start = 'CH00_Introduction'
+    end = '09_Ronaldo'
+
+    updated_events = events_between_two_points(user_events, start, end, filter = True)
+
+    # there should be one less user
+    assert len(updated_events.keys()) == len(user_events.keys()) - 1
+
+    # we know that this user doesn't get past the start, so they should be in the keys
+    assert 'be3720be-3da1-419c-b912-cacc3f80a427' not in updated_events.keys()
+
 
 # TODO: test for parse raw data
 

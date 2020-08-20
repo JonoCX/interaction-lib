@@ -316,3 +316,60 @@ def reached_point(
     # otherwise, we need to get the difference and return the users that passed through.
     return set(user_events.keys()) - users_to_remove
 
+def events_between_two_points(
+    user_events: Dict[str, List], 
+    start_point: str, 
+    end_point: str, 
+    filter: bool = False
+) -> Dict[str, List]:
+    """
+        Given all of the user events, return a filtered set of user events that were
+        triggered between two points. This is useful for extracting events that occur
+        during the substories of Click.
+
+        TODO: implement the option to use representation ids rather than romper_to_states
+
+        :params user_events: dictionary of user events ({user -> [events]})
+        :params start_point: romper_to_state value
+        :params end_point: romper_to_state value
+        :params filter: remove users with empty event lists (default = False)
+        :returns: dictionary of user events
+    """
+    if not isinstance(user_events, dict): 
+        raise ValueError(f"user_events must be a dictionary (current type: {type(user_events)}")
+    elif len(user_events) == 0:
+        raise ValueError(f"user_events is empty (len = {len(user_events)}")
+    elif not all(isinstance(l, list) for l in user_events.values()):
+        raise ValueError(f"the values in user_events should be lists of events")
+
+    # add all users to dictionary with empty lists
+    events_subset = {user: [] for user in user_events.keys()}
+
+    for user, events in user_events.items():
+        # find the starting point index
+        start_idx = None 
+        for idx, event in enumerate(events):
+            if (event['action_type'] == 'STORY_NAVIGATION' and 
+                event['data']['romper_to_state'] == start_point):
+                start_idx = idx 
+                break 
+        
+        # iterate from that index, adding events until you reach the end
+        if start_idx is not None:
+            for idx, event in enumerate(events[start_idx:]):
+                # is the current event the one where they move to the end point?
+                if (event['action_type'] == 'STORY_NAVIGATION' and 
+                    event['data']['romper_to_state'] == end_point):
+                    events_subset[user].append(event) # add the event
+                    break # exit, we've reached the endpoint
+                else:
+                    events_subset[user].append(event)
+    
+    if filter: # if we're asked to remove empty lists
+        return {
+            user: events 
+            for user, events in events_subset.items() # for all users -> events
+            if events # if the list contains some events
+        }
+    else:
+        return events_subset
