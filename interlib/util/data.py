@@ -320,7 +320,8 @@ def events_between_two_points(
     user_events: Dict[str, List], 
     start_point: str, 
     end_point: str, 
-    filter: bool = False
+    filter: bool = False,
+    using_representation_id: bool = False
 ) -> Dict[str, List]:
     """
         Given all of the user events, return a filtered set of user events that were
@@ -333,6 +334,9 @@ def events_between_two_points(
         :params start_point: romper_to_state value
         :params end_point: romper_to_state value
         :params filter: remove users with empty event lists (default = False)
+        :params using_representation_id: in newer experiences, each node is given a unique
+            representation id, if you're passing ids to the start_point and end_point parameters
+            then you need to set this to true (default = False)
         :returns: dictionary of user events
     """
     if not isinstance(user_events, dict): 
@@ -350,7 +354,15 @@ def events_between_two_points(
         start_idx = None 
         for idx, event in enumerate(events):
             if (event['action_type'] == 'STORY_NAVIGATION' and 
-                event['data']['romper_to_state'] == start_point):
+                event['data']['romper_to_state'] == start_point and 
+                not using_representation_id
+            ):
+                start_idx = idx 
+                break
+            elif (event['action_type'] == 'STORY_NAVIGATION' and 
+                using_representation_id and 
+                event['data']['current_narrative_element'] == start_point
+            ):
                 start_idx = idx 
                 break 
         
@@ -359,9 +371,17 @@ def events_between_two_points(
             for idx, event in enumerate(events[start_idx:]):
                 # is the current event the one where they move to the end point?
                 if (event['action_type'] == 'STORY_NAVIGATION' and 
-                    event['data']['romper_to_state'] == end_point):
+                    event['data']['romper_to_state'] == end_point and 
+                    not using_representation_id
+                ):
                     events_subset[user].append(event) # add the event
                     break # exit, we've reached the endpoint
+                elif (event['action_type'] == 'STORY_NAVIGATION' and 
+                    using_representation_id and 
+                    event['data']['current_narrative_element'] == end_point
+                ):
+                    events_subset[user].append(event) # add the event 
+                    break # exit, we've reached the end point
                 else:
                     events_subset[user].append(event)
     

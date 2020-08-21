@@ -238,5 +238,28 @@ def test_events_between_two_points_filter(data_location):
     assert 'be3720be-3da1-419c-b912-cacc3f80a427' not in updated_events.keys()
 
 
+def test_events_between_two_points_using_representation_id(data_location):
+    user_events = to_dict(data_location)
+    users_reached_end = set([ # determined from mysql query on data
+        'b4588353-cecb-4dee-ae8b-833d7888dec5',
+        'b1728dff-021d-4b82-9afc-8a29264b53e4',
+        '959c1a91-8b0f-4178-bc59-70499353204f',
+        'b194b76c-7866-4b6d-8502-93ffe6322b64'
+    ])
+
+    start = '66f663b2-16ec-4321-abc3-5f582d0649ef' # CH00_Introduction
+    end = '0d51a32c-d05c-439b-8317-8b36ef0e6d10' # 09_Ronaldo
+
+    updated_events = events_between_two_points(
+        user_events, start, end, using_representation_id = True)
+
+    for user, events in updated_events.items():
+        if len(events) > 0:
+            if user in users_reached_end: # these are users that got to the end point
+                assert (events[0]['data']['current_narrative_element'] == start and 
+                        events[-1]['data']['current_narrative_element'] == end)
+            else:
+                assert events[0]['data']['current_narrative_element'] == start
+
 # TODO: test for parse raw data
 
