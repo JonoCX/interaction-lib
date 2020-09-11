@@ -69,15 +69,21 @@ def test_get_slices(test_data, interaction_events, stats_ground_truth):
             total_session_length += val['session_length']
             total_total_events += val['total_events']
 
-    print(total_session_length, stats_ground_truth['959c1a91-8b0f-4178-bc59-70499353204f']['session_length'])
-    print(total_total_events, stats_ground_truth['959c1a91-8b0f-4178-bc59-70499353204f']['total_events'])
+    for user, gt in stats_ground_truth.items():
+        user_spec = [s for s in ss_slices if s['user'] == user]
+        sess_len, hidden_time = 0, 0
+        for item in user_spec:
+            sess_len += item['session_length']
+            hidden_time += item['hidden_time']
+        
+        assert gt['session_length'] == pytest.approx(sess_len, 0.1)
+        assert gt['hidden_time'] == pytest.approx(hidden_time, 0.1)
 
 def test_get_slices_df(test_data, interaction_events):
     ss = StatisticalSlices(test_data, interaction_events)
     ss_slices = ss.get_slices(as_df = True)
 
-    print(set([s['user'] for s in ss_slices]))
-    print(pd.DataFrame(ss_slices))
+    print(ss_slices)
     # dfs = [
     #     pd.DataFrame(val)
     #     for val in ss_slices
