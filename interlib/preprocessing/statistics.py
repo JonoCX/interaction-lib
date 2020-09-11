@@ -1,7 +1,7 @@
 """ """
 
 from .base import BaseExtractor
-from ..util import get_hidden_time, missing_hidden_visibility_change
+from ..util import get_hidden_time, missing_hidden_visibility_change, safe_division
 
 from joblib import Parallel, delayed, cpu_count
 from datetime import datetime as dt
@@ -358,7 +358,8 @@ class Statistics(BaseExtractor):
                 # calculate relative frequency for each event
                 ua_relative_frequency = defaultdict(float)
                 for event, count in ua_counter.items():
-                    ua_relative_frequency[event + '_freq'] = (count / total_events) * 100 
+                    ua_relative_frequency[event + '_freq'] = safe_division(count, total_events) / 100
+                    # ua_relative_frequency[event + '_freq'] = (count / total_events) * 100 
 
                 results[user].update(dict(ua_counter))
                 results[user].update(dict(ua_relative_frequency))

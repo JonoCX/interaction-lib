@@ -34,3 +34,6 @@ def missing_hidden_visibility_change(visbile_ts, current_index, events):
     
     return (visbile_ts - pseudo_hidden_ts).total_seconds()
 
+def safe_division(n, d):
+    return n / d if d else 0
+

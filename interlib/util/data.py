@@ -251,7 +251,7 @@ def to_dataframe(
     """
     if not isinstance(result_dictionary, dict):
         raise TypeError(f"result_dictionary should be a dictionary and be the output from the " +
-                        "Statistics package, current type: {type(result_dictionary)}")
+                        f"Statistics package, current type: {type(result_dictionary)}")
 
     return pd.DataFrame.from_dict(
         result_dictionary, orient = 'index'
