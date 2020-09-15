@@ -12,7 +12,7 @@ class StatisticalSlices(BaseExtractor):
     def __init__(self, user_events, interaction_events):
         super().__init__(user_events)
 
-        self._slices = []#{user: [] for user in self.data.keys()}
+        self._slices = []
         self._interaction_events = interaction_events
         self._is_sliced = False
 
@@ -59,8 +59,8 @@ class StatisticalSlices(BaseExtractor):
                         include_link_choices = True
                     )
                     wind_stats[user]['abandon'] = False
-                    wind_stats[user]['start_nec'] = wind[0]['data']['romper_to_state']
-                    wind_stats[user]['end_nec'] = end_point 
+                    wind_stats[user]['from_state'] = wind[0]['data']['romper_to_state']
+                    wind_stats[user]['to_state'] = end_point 
                     wind_stats[user]['user'] = user
 
                     # get the timestamp of the last element because the metrics are recorded
@@ -75,8 +75,8 @@ class StatisticalSlices(BaseExtractor):
                         include_link_choices = True 
                     )
                     wind_stats[user]['abandon'] = True 
-                    wind_stats[user]['start_nec'] = wind[0]['data']['romper_to_state']
-                    wind_stats[user]['end_nec'] = 'abandon'
+                    wind_stats[user]['from_state'] = wind[0]['data']['romper_to_state']
+                    wind_stats[user]['to_state'] = 'abandon'
                     wind_stats[user]['user'] = user
 
                     # time that the abandon happened.
