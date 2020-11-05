@@ -1,3 +1,4 @@
+from numpy.core.defchararray import add
 import pytest
 
 import pickle, json, datetime
@@ -56,7 +57,7 @@ def test_init(test_data):
 
     stats = Statistics(test_data)
     assert stats.data.keys() == test_data.keys()
-    assert stats.n_jobs == -1
+    assert stats.n_jobs == 1
     
 # ----- SPLIT USERS ------
 def test_split_users_correct_chunks(test_data):
@@ -409,7 +410,7 @@ def test_overall_statistics_single_user(test_data, ground_truth, interaction_eve
     individual_ground_truth_results = ground_truth[user]
 
     for stat, value in individual_results.items():
-        if '_freq' in stat: continue # we'll test this further down
+        if '_freq' in stat or 'nec_time' in stat: continue # we'll test this further down
 
         if stat in time_stats:
             assert individual_ground_truth_results[stat] == pytest.approx(value, 0.1)
@@ -429,7 +430,7 @@ def test_overall_statistics_single_user_without_lcc_usv(test_data, ground_truth,
     res_individual = stats.calculate_statistics(interaction_events, user_id = user)
 
     for stat, value in res_individual.items():
-        if '_freq' in stat: continue # we'll test this further down
+        if '_freq' in stat or 'nec_time' in stat: continue # we'll test this further down
         
         if stat in time_stats:
             assert gt_individual[stat] == pytest.approx(value, 0.1)
@@ -482,3 +483,18 @@ def test_overall_statistics_errors(test_data, ground_truth, interaction_events):
             interaction_events = interaction_events,
             user_id = '150b'
         )
+
+# ----- TEST AVG NEC TIME STATISTICS -----
+@pytest.fixture
+def additional_statistics():
+    with open('tests/test_data_files/test_additional_statistics.json', 'r') as d_in:
+        data = json.load(d_in)
+    return data
+
+def test_avg_nec_time(test_data, additional_statistics):
+    stats = Statistics(test_data, n_jobs = 1)
+    res = stats.time_statistics()
+
+    for u, s in additional_statistics.items():
+        avg = res[u]['avg_nec_time']
+        assert s['avg_nec_time'] == pytest.approx(avg, rel=1e-1)

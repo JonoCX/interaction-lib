@@ -1,5 +1,6 @@
 """ """
 
+from numpy.core.multiarray import result_type
 from .base import BaseExtractor
 from ..util import get_hidden_time, missing_hidden_visibility_change, safe_division
 
@@ -13,13 +14,16 @@ import pandas as pd
 
 np.random.seed(42)
 
+NEC = 'NARRATIVE_ELEMENT_CHANGE'
+BVC = 'BROWSER_VISIBILITY_CHANGE'
+
 class Statistics(BaseExtractor):
     
     def __init__(
         self, 
         user_event_dict: Dict[str, List[Dict]], 
         completion_point: Optional[str] = None,
-        n_jobs: Optional[int] = -1
+        n_jobs: Optional[int] = 1
     ) -> None:        
         # super(Statistics, self).__init__(
         #     user_event_dict = user_event_dict.copy(),
@@ -52,6 +56,68 @@ class Statistics(BaseExtractor):
             :params user_id: a specific user to get the statistics for
             :returns: dictionary of results {user -> {hidden_time: 0...}}
         """
+        def _get_average_nec_time(user_dict, no_event_set = None):
+            result = {}
+
+            for user, events in user_dict.items():
+                if user in no_event_set:
+                    result[user] = {
+                        'avg_nec_time': 0.0, 'std_nec_time': 0.0, 'med_nec_time': 0.0
+                    }
+                    continue
+
+            
+                nec_bvc_events = [ # get the BVC and NEC events
+                    ev 
+                    for ev in events 
+                    if (ev['action_name'] == 'BROWSER_VISIBILITY_CHANGE' or 
+                        ev['action_name'] == 'NARRATIVE_ELEMENT_CHANGE')
+                ]
+
+                times = []
+                for idx, event in enumerate(nec_bvc_events):
+                    if event == nec_bvc_events[-1]: break 
+
+                    if event['action_name'] == NEC:
+                        # search forward to gather all events between this NEC and the next
+                        intermediate_events = []
+                        for ev in nec_bvc_events[idx + 1:]:
+                            intermediate_events.append(ev)
+
+                            # exit once we've found the next NEC
+                            if ev['action_name'] == NEC: break
+
+                        # if there's only one - i.e. the next NEC was immediately following
+                        if (len(intermediate_events) == 1 and 
+                            intermediate_events[0]['action_name'] == NEC):                       
+                            time_diff = ( # get the time difference in seconds
+                                intermediate_events[0]['timestamp'] - event['timestamp']
+                            ).total_seconds()
+
+                        else: # then we have some additional (BVC) events in between
+                            non_nec_events = [ # get all of those non-NEC events
+                                ev for ev in intermediate_events if ev['action_name'] != NEC
+                            ]
+                            hidden_times = []
+                            for non_nec_idx, non_nec_ev in enumerate(non_nec_events):
+                                hidden_times.append(get_hidden_time(
+                                    non_nec_ev['timestamp'], non_nec_idx, non_nec_events
+                                ))
+  
+                            time_diff = ( # get the time difference
+                                intermediate_events[-1]['timestamp'] - event['timestamp']
+                            ).total_seconds() - sum(hidden_times)
+
+                        times.append(time_diff)
+
+                result[user] = {
+                    'avg_nec_time': np.mean(times),
+                    'std_nec_time': np.std(times),
+                    'med_nec_time': np.median(times)
+                }
+
+            return result
+  
         def _get_stats(user_chunk, data_chunk):
             user_dict = {user: [] for user in user_chunk}
             for d in data_chunk: user_dict[d['user']].append(d)
@@ -118,6 +184,15 @@ class Statistics(BaseExtractor):
             # calculate the raw session length
             for user, ts in timestamps.items():
                 results[user].update({'raw_session_length': (ts[-1] - ts[0]).total_seconds()})
+
+            # calculate the average (plus other statistics) NEC time
+            avg_nec_times = _get_average_nec_time(user_dict, no_events_set)
+            for user, res in avg_nec_times.items():
+                results[user].update({
+                    'avg_nec_time': res['avg_nec_time'],
+                    'std_nec_time': res['std_nec_time'],
+                    'med_nec_time': res['med_nec_time']
+                })
 
             for user, res in results.copy().items(): # update the results with the session length
                 if user in no_events_set: sess_length = 0.0
