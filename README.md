@@ -6,7 +6,7 @@ Interlib is a data processing library created to work with interaction data. In 
 
 ## Installation
 
-Currently, the package is not available on the pip package manager -- it will be once the library has been open sourced along side some data -- so the process to install involves installing directly from Github. (Please ensure that you have an appropriate Python 3.6+ virtual environment installed and activated before installing this package).
+Currently, the package is not available on the pip package manager -- it will be once the library has been open sourced along side some data -- so the process to install involves installing directly from Github. (Please ensure that you have an appropriate Python 3.6+ virtual environment installed and activated before installing this package, I would recommend Anaconda (Miniconda: https://docs.conda.io/en/latest/miniconda.html)).
 
 ```bash
 $ pip install -e git+https://github.com/JonoCX/interaction-lib.git#egg=interlib
@@ -34,7 +34,7 @@ The library makes the presumption that you have interaction data in a particular
 "<user_N>": []}
 ```
 
-The data snippet above is a single event, in a parsed format, recorded in an interactive experience. It is a dictionary of user and a list of events. If you're working with raw data extracted directly from an experience, then it will not be in the above format. As such, the library includes a utility method to convert raw data into a usable format:
+The data snippet above is a single event, in a parsed format, recorded in an interactive experience. It is a dictionary of user and a list of events. If you're working with raw data extracted directly from an experience, then it will not be in the above format. As such, the library includes a utility method to convert raw data (from an SQL dump) into a usable format:
 
 ```python
 from interlib.util import to_dict

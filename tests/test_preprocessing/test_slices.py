@@ -1,5 +1,7 @@
 import pytest 
 
+pytestmark = pytest.mark.skip("all tests still WIP")
+
 import pickle, json, datetime 
 import numpy as np 
 import pandas as pd
