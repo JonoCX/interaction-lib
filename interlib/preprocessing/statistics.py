@@ -78,23 +78,13 @@ class Statistics(BaseExtractor):
                 for index, event in enumerate(events): 
                     if (event['action_name'] == 'BROWSER_VISIBILITY_CHANGE' and 
                         event['data']['romper_to_state'] == 'hidden'):
-                        hidden_ts = event['timestamp'] # record the timestamp
-
-                        if (index + 1) == len(events): break # if it's at the end, exit
-
-                        visible_ts = None
-                        if (events[index + 1]['action_name'] == 'BROWSER_VISIBILITY_CHANGE' and
-                            events[index + 1]['data']['romper_to_state'] == 'visible'):
-                            visible_ts = events[index + 1]['timestamp']
-                        else: # otherwise, loop forward in the event to find next BVC
-                            for f_index, f_event in enumerate(events[index:]): 
-                                if (f_event['action_name'] == 'BROWSER_VISIBILITY_CHANGE' and 
-                                    f_event['data']['romper_to_state'] == 'visible'):
-                                    visible_ts = f_event['timestamp']
-                                    break
-
-                        if visible_ts: # if found, calculate the difference
-                            hidden_times.append((visible_ts - hidden_ts).total_seconds())
+                        hidden_times.append(
+                            get_hidden_time(
+                                event['timestamp'],
+                                index,
+                                events
+                            )
+                        )
 
                     # time of completion
                     if self.completion_point:
