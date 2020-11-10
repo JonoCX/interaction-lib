@@ -393,3 +393,50 @@ def events_between_two_points(
         }
     else:
         return events_subset
+
+def events_to_threshold(
+    user_events: Dict[str, List],
+    threshold: Union[int, float],
+) -> Dict[str, List]:
+    """
+        Given a dictionary of user events, filter the events down to
+        those that happen up until the threshold. For example, if the
+        threshold is set to 300 (indicating 5 minutes), then the function
+        return a dictionary contain the users' events up until the 5 minute
+        threshold.
+
+        There is an assumption that all of the users in the dictionary have been
+        pre-filtered to only include those that got up to, or past, the threshold.
+
+        :params user_events:
+        :params threshold:
+        :returns:
+    """
+    if not isinstance(user_events, dict): 
+        raise ValueError(f"user_events must be a dictionary (current type: {type(user_events)}")
+    elif len(user_events) == 0:
+        raise ValueError(f"user_events is empty (len = {len(user_events)}")
+    elif not all(isinstance(l, list) for l in user_events.values()):
+        raise ValueError(f"the values in user_events should be lists of events")
+
+    filtered_user_events = {}
+    for user, events in user_events.items():
+        events_threshold = []
+        first_event_timestamp = None 
+        
+        for event in events:
+            if first_event_timestamp is None:
+                first_event_timestamp = event['timestamp']
+                events_threshold.append(event)
+                continue 
+            
+            # if the difference between the first and current event is greater than the threshold
+            if (event['timestamp'] - first_event_timestamp).total_seconds() > threshold:
+                events_threshold.append(event)
+                break # exit as we've met the threshold
+            else:
+                events_threshold.append(event)
+
+        filtered_user_events[user] = events_threshold
+
+    return filtered_user_events            
