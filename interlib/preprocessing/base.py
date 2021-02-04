@@ -33,6 +33,9 @@ class BaseExtractor():
 
         if self.completion_point:
             self._users_reached_completion_point, self.last_ne = self._reached_completion_point()
+        else:
+            self.last_ne = {user: np.nan for user in self.data.keys()}
+            self._users_reached_completion_point = {user: False for user in self.data.keys()}
 
         if self.n_jobs == -1: self._num_cpu = cpu_count()
         else: self._num_cpu = n_jobs

@@ -26,11 +26,6 @@ class Statistics(BaseExtractor):
         n_jobs: Optional[int] = 1,
         narrative_element_durations: Optional[Dict[str, float]] = None
     ) -> None:        
-        # super(Statistics, self).__init__(
-        #     user_event_dict = user_event_dict.copy(),
-        #     completion_point = completion_point,
-        #     n_jobs = n_jobs
-        # )
         BaseExtractor.__init__(
             self,
             user_event_dict = user_event_dict.copy(),
