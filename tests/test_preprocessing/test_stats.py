@@ -497,4 +497,24 @@ def test_avg_nec_time(test_data, additional_statistics):
 
     for u, s in additional_statistics.items():
         avg = res[u]['avg_nec_time']
-        assert s['avg_nec_time'] == pytest.approx(avg, rel=1e-1)
+        assert s['avg_nec_time'] == pytest.approx(avg, rel=1)
+
+
+# ----- TEST NARRATIVE ELEMENT NORMALISED TIME ----
+@pytest.fixture
+def narrative_element_durations():
+    # return json.load(open('tests/test_data_files/narrative_element_durations.json', 'r'))
+    return {
+        'Intro Message': 15.00
+    }
+
+def test_norm_time(test_data, narrative_element_durations):
+    stats = Statistics(
+        test_data, n_jobs = 1, narrative_element_durations=narrative_element_durations)
+    res = stats.time_statistics()
+
+    # for u, s in res.items():
+    #     print(u, s['norm_avg_nec_time'], s['norm_std_nec_time'])
+
+    # appears to output the correct values - needs proper testing.
+    
