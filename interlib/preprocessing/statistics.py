@@ -101,8 +101,12 @@ class Statistics(BaseExtractor):
             for nec, time in user_timings.items():
                 if nec not in self._nec_durations.keys():
                     continue 
-                default_duration = self._nec_durations[nec]
-                times.append(time / default_duration)
+
+                if self._nec_durations[nec] == 0:
+                    times.append(0.0)
+                else:
+                    default_duration = self._nec_durations[nec]
+                    times.append(safe_division(time, default_duration))
 
             return {
                 'norm_avg_nec_time': np.mean(times),
