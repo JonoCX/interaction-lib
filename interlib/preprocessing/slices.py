@@ -6,15 +6,22 @@ import pandas as pd
 from .base import BaseExtractor
 from .statistics import Statistics
 from ..util import to_dataframe
+from typing import Optional, List, Dict 
 
 class StatisticalSlices(BaseExtractor):
 
-    def __init__(self, user_events, interaction_events):
+    def __init__(
+        self, 
+        user_events: Dict[str, List[Dict]], 
+        interaction_events: List[str],
+        narrative_element_durations: Optional[Dict[str, float]] = None 
+    ):
         super().__init__(user_events)
 
         self._slices = []
         self._interaction_events = interaction_events
         self._is_sliced = False
+        self._nec_durations = narrative_element_durations
 
     def _window(self, events_arr, indices):
         event_slices = []
@@ -53,7 +60,10 @@ class StatisticalSlices(BaseExtractor):
                 if wind[-1]['action_name'] == 'NARRATIVE_ELEMENT_CHANGE':
                     end_point = wind[-1]['data']['romper_to_state']
 
-                    s = Statistics({user: wind}, completion_point = end_point, n_jobs = 1)
+                    s = Statistics(
+                        {user: wind}, completion_point = end_point, n_jobs = 1,
+                        narrative_element_durations = self._nec_durations
+                    )
                     wind_stats = s.calculate_statistics(
                         self._interaction_events, 
                         include_link_choices = True
@@ -69,7 +79,9 @@ class StatisticalSlices(BaseExtractor):
                     wind_stats[user]['timestamp'] = wind[-1]['timestamp']
                 else:
                     # abandon
-                    s = Statistics({user: wind}, n_jobs = 1)
+                    s = Statistics(
+                        {user: wind}, n_jobs = 1, narrative_element_durations = self._nec_durations
+                    )
                     wind_stats = s.calculate_statistics(
                         self._interaction_events,
                         include_link_choices = True 
