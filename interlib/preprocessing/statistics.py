@@ -316,30 +316,31 @@ class Statistics(BaseExtractor):
             :params events: the user events
         """
         pauses = []
-        previous_timestamp = None
+        previous_timestamp = events[0]['timestamp']
+        ev = []
         for event in events:
-            # we're only counting pauses between user events, ignoring
-            # variable setting and link choices
-            if (event['action_type'] == 'USER_ACTION' and
-                event['action_name'] != 'USER_SET_VARIABLE' and
-                event['action_name'] != 'LINK_CHOICE_CLICKED'):
-                if previous_timestamp is None: # no previous, set first ts
-                    previous_timestamp = event['timestamp']
-
-                # get the type of pause, if any
+            # If the event is a user action and not either a variable set or link choice
+            # or if the event is a browser visibility change or window orientation change
+            if ((event['action_type'] == 'USER_ACTION' and
+                event['action_name'] != 'USER_SET_VARIABLE' and 
+                event['action_name'] != 'LINK_CHOICE_CLICKED') or 
+                (event['action_name'] == 'BROWSER_VISIBILITY_CHANGE' or 
+                event['action_name'] == 'WINDOW_ORIENTATION_CHANGE')):
+                # then calculate the pause
                 pause_type, diff = self._type_of_pause(previous_timestamp, event['timestamp'])
 
-                if pause_type != 0: # if there is a pause
+                ev.append(event)
+                # if there is a pause of some description, then add to the list
+                if pause_type != 0: 
                     pauses.append(pause_type)
 
-                # update to the current
+                # set the previous timestamp to the current
                 previous_timestamp = event['timestamp']
 
-        # get a count of the pauses
+        
         pauses = Counter(pauses)
         return {
-            'SP': pauses['SP'], 'MP': pauses['MP'],
-            'LP': pauses['LP'], 'VLP': pauses['VLP']
+            'SP': pauses['SP'], 'MP': pauses['MP'], 'LP': pauses['LP'], 'VLP': pauses['VLP']
         }
         
     def pause_statistics(

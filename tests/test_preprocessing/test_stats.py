@@ -179,7 +179,12 @@ def test_pause_statistics(test_data, ground_truth):
     stats = Statistics(test_data)
     res = stats.pause_statistics()
 
+    for user, r in res.items():
+        print(user, 'sp', r['SP'], 'mp', r['MP'], 'lp', r['LP'], 'vlp', r['VLP'])
+
     for user, stat in ground_truth.items():
+        if user == '959c1a91-8b0f-4178-bc59-70499353204f':
+            print('sp', res[user]['SP'], 'mp', res[user]['MP'], 'lp', res[user]['LP'], 'vlp', res[user]['VLP'])
         assert res[user]['SP'] == stat['SP']
         assert res[user]['MP'] == stat['MP']
         assert res[user]['LP'] == stat['LP']
