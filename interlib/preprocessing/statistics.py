@@ -307,29 +307,30 @@ class Statistics(BaseExtractor):
 
     def _pause_counts(
         self, 
-        events: list
+        events: list,
+        pauses_include_events: Optional[Set] = {},
+        pauses_exclude_events: Optional[Set] = {}, 
     ) -> Dict[str, int]:
         """
             Given a set of user actions, count the number of
             pauses that occur.
 
             :params events: the user events
+            :params pauses_include_events: a set of events to include outside of the standard
+                USER_ACTION events, i.e., browser visibility and window orientation changes
+            :params pauses_exclude_events: a set of events to exclude from the pause calculations.
         """
         pauses = []
         previous_timestamp = events[0]['timestamp']
-        ev = []
         for event in events:
-            # If the event is a user action and not either a variable set or link choice
-            # or if the event is a browser visibility change or window orientation change
-            if ((event['action_type'] == 'USER_ACTION' and
-                event['action_name'] != 'USER_SET_VARIABLE' and 
-                event['action_name'] != 'LINK_CHOICE_CLICKED') or 
-                (event['action_name'] == 'BROWSER_VISIBILITY_CHANGE' or 
-                event['action_name'] == 'WINDOW_ORIENTATION_CHANGE')):
-                # then calculate the pause
+            # if the event is a user action OR in the events we want to include AND not in the
+            # events we want to exclude, then calculate the pauses
+            if ((event['action_type'] == 'USER_ACTION' or 
+                event['action_name'] in pauses_include_events) and 
+                event['action_name'] not in pauses_exclude_events): 
+
                 pause_type, diff = self._type_of_pause(previous_timestamp, event['timestamp'])
 
-                ev.append(event)
                 # if there is a pause of some description, then add to the list
                 if pause_type != 0: 
                     pauses.append(pause_type)
@@ -346,7 +347,9 @@ class Statistics(BaseExtractor):
     def pause_statistics(
         self, 
         verbose: Optional[int] = 0, 
-        user_id: Optional[str] = None
+        user_id: Optional[str] = None,
+        pauses_include_events: Optional[Set] = {},
+        pauses_exclude_events: Optional[Set] = {} 
     ) -> Dict[str, Dict]:
         """ 
             Based on the event data supplied, calculate the pause
@@ -354,6 +357,9 @@ class Statistics(BaseExtractor):
 
             :params verbose: verbosity level passed to the joblib backend
             :params user_id: a specific user to calculate the statistics for
+            :params pauses_include_events: a set of events to include outside of the standard
+                USER_ACTION events, i.e., browser visibility and window orientation changes
+            :params pauses_exclude_events: a set of events to exclude from the pause calculations.
             :returns: a dictionary with a mapping from user to statistics
         """
         def _get_pauses(user_chunk, data_chunk):
@@ -368,7 +374,11 @@ class Statistics(BaseExtractor):
                     continue
 
                 results[user].update(
-                    self._pause_counts(events)
+                    self._pause_counts(
+                        events, 
+                        pauses_include_events = pauses_include_events,
+                        pauses_exclude_events = pauses_exclude_events
+                    )
                 )
             
             return results
@@ -705,6 +715,8 @@ class Statistics(BaseExtractor):
         interaction_events: List[str],
         user_id: Optional[str] = None,
         include_link_choices: Optional[bool] = False,
+        pauses_include_events: Optional[Set] = {},
+        pauses_exclude_events: Optional[Set] = {},
         include_user_set_variables: Optional[bool] = False,
         verbose: Optional[int] = 0
     ) -> Dict[str, Dict[str, Union[int, float]]]:
@@ -716,6 +728,9 @@ class Statistics(BaseExtractor):
             track in the statistics
             :params user_id: a specific user to calculate statistics for
             :params include_link_choices: whether to include LC in the statistics
+            :params pauses_include_events: a set of events to include outside of the standard
+                USER_ACTION events, i.e., browser visibility and window orientation changes
+            :params pauses_exclude_events: a set of events to exclude from the pause calculations.
             :params include_user_set_variables: whether to include USV in the statistics
             :params verbose: verbosity level passed to joblib backend
             :returns: a dictionary containing a mapping from users to their
@@ -746,7 +761,12 @@ class Statistics(BaseExtractor):
                 # return a dict of results = {total_events: 24, pp: 1, etc..}
                 individual_results = {
                     **self.time_statistics(user_id = user_id, verbose = verbose),
-                    **self.pause_statistics(user_id = user_id, verbose = verbose),
+                    **self.pause_statistics(
+                        user_id = user_id, 
+                        pauses_include_events = pauses_include_events,
+                        pauses_exclude_events = pauses_exclude_events, 
+                        verbose = verbose
+                    ),
                     **self.event_statistics(
                         interaction_events, user_id = user_id,
                         include_link_choices = include_link_choices,
@@ -761,12 +781,17 @@ class Statistics(BaseExtractor):
 
             # first calculate all of the statistics individually
             self.time_statistics(verbose = verbose)
-            self.pause_statistics(verbose = verbose)
+            self.pause_statistics(
+                pauses_include_events = pauses_include_events,
+                pauses_exclude_events = pauses_exclude_events, 
+                verbose = verbose
+            )
             self.event_statistics(
                 interaction_events = interaction_events,
                 include_link_choices = include_link_choices,
                 include_user_set_variables = include_user_set_variables,
-                verbose = verbose)
+                verbose = verbose
+            )
             
             for user in self._users: # build up the statistics dictionary
                 self._statistics[user] = {}

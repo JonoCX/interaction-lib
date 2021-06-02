@@ -177,7 +177,10 @@ def test_errors_type_of_pause(test_data):
 
 def test_pause_statistics(test_data, ground_truth):
     stats = Statistics(test_data)
-    res = stats.pause_statistics()
+    res = stats.pause_statistics(
+        pauses_include_events = {'BROWSER_VISIBILITY_CHANGE', 'WINDOW_ORIENTATION_CHANGE'},
+        pauses_exclude_events = {'USER_SET_VARIABLE', 'LINK_CHOICE_CLICKED'}
+    )
 
     for user, r in res.items():
         print(user, 'sp', r['SP'], 'mp', r['MP'], 'lp', r['LP'], 'vlp', r['VLP'])
@@ -196,7 +199,10 @@ def test_empty_pauses_statistics(test_data):
     test_data_copy[user_to_delete] = [] # remove their events
 
     stats = Statistics(test_data_copy)
-    res = stats.pause_statistics()
+    res = stats.pause_statistics(
+        pauses_include_events = {'BROWSER_VISIBILITY_CHANGE', 'WINDOW_ORIENTATION_CHANGE'},
+        pauses_exclude_events = {'USER_SET_VARIABLE', 'LINK_CHOICE_CLICKED'}
+    )
 
     assert res[user_to_delete]['SP'] == 0
     assert res[user_to_delete]['MP'] == 0
@@ -207,7 +213,11 @@ def test_pauses_single_user(test_data, ground_truth):
     stats = Statistics(test_data)
     user = '959c1a91-8b0f-4178-bc59-70499353204f'
     
-    result = stats.pause_statistics(user_id = user)
+    result = stats.pause_statistics(
+        user_id = user,
+        pauses_include_events = {'BROWSER_VISIBILITY_CHANGE', 'WINDOW_ORIENTATION_CHANGE'},
+        pauses_exclude_events = {'USER_SET_VARIABLE', 'LINK_CHOICE_CLICKED'}
+    )
 
     assert result['SP'] == ground_truth[user]['SP']
     assert result['MP'] == ground_truth[user]['MP']
@@ -392,7 +402,9 @@ def test_overall_statistics(test_data, ground_truth, interaction_events, time_st
         interaction_events, 
         verbose = 0, 
         include_link_choices = True, 
-        include_user_set_variables = True
+        include_user_set_variables = True,
+        pauses_include_events = {'BROWSER_VISIBILITY_CHANGE', 'WINDOW_ORIENTATION_CHANGE'},
+        pauses_exclude_events = {'USER_SET_VARIABLE', 'LINK_CHOICE_CLICKED'}
     )
 
     for user, stat in ground_truth.items():
@@ -410,7 +422,9 @@ def test_overall_statistics_single_user(test_data, ground_truth, interaction_eve
         interaction_events, 
         user_id = user,
         include_link_choices = True,
-        include_user_set_variables = True
+        include_user_set_variables = True,
+        pauses_include_events = {'BROWSER_VISIBILITY_CHANGE', 'WINDOW_ORIENTATION_CHANGE'},
+        pauses_exclude_events = {'USER_SET_VARIABLE', 'LINK_CHOICE_CLICKED'}
     )
     individual_ground_truth_results = ground_truth[user]
 
@@ -432,7 +446,12 @@ def test_overall_statistics_single_user_without_lcc_usv(test_data, ground_truth,
         if stat == 'LINK_CHOICE_CLICKED' or stat == 'USER_SET_VARIABLE':
             gt_individual['total_events'] -= gt_individual[stat]
     
-    res_individual = stats.calculate_statistics(interaction_events, user_id = user)
+    res_individual = stats.calculate_statistics(
+        interaction_events, 
+        user_id = user,
+        pauses_include_events = {'BROWSER_VISIBILITY_CHANGE', 'WINDOW_ORIENTATION_CHANGE'},
+        pauses_exclude_events = {'USER_SET_VARIABLE', 'LINK_CHOICE_CLICKED'}
+    )
 
     for stat, value in res_individual.items():
         if '_freq' in stat or 'nec_time' in stat: continue # we'll test this further down
