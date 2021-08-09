@@ -182,12 +182,12 @@ def test_pause_statistics(test_data, ground_truth):
         pauses_exclude_events = {'USER_SET_VARIABLE', 'LINK_CHOICE_CLICKED'}
     )
 
-    for user, r in res.items():
-        print(user, 'sp', r['SP'], 'mp', r['MP'], 'lp', r['LP'], 'vlp', r['VLP'])
+    # for user, r in res.items():
+        # print(user, 'sp', r['SP'], 'mp', r['MP'], 'lp', r['LP'], 'vlp', r['VLP'])
 
     for user, stat in ground_truth.items():
-        if user == '959c1a91-8b0f-4178-bc59-70499353204f':
-            print('sp', res[user]['SP'], 'mp', res[user]['MP'], 'lp', res[user]['LP'], 'vlp', res[user]['VLP'])
+        # if user == '959c1a91-8b0f-4178-bc59-70499353204f':
+            # print('sp', res[user]['SP'], 'mp', res[user]['MP'], 'lp', res[user]['LP'], 'vlp', res[user]['VLP'])
         assert res[user]['SP'] == stat['SP']
         assert res[user]['MP'] == stat['MP']
         assert res[user]['LP'] == stat['LP']
@@ -429,7 +429,7 @@ def test_overall_statistics_single_user(test_data, ground_truth, interaction_eve
     individual_ground_truth_results = ground_truth[user]
 
     for stat, value in individual_results.items():
-        if '_freq' in stat or 'nec_time' in stat: continue # we'll test this further down
+        if '_proportion' in stat or 'nec_time' in stat: continue # we'll test this further down
 
         if stat in time_stats:
             assert individual_ground_truth_results[stat] == pytest.approx(value, 0.1)
@@ -454,7 +454,7 @@ def test_overall_statistics_single_user_without_lcc_usv(test_data, ground_truth,
     )
 
     for stat, value in res_individual.items():
-        if '_freq' in stat or 'nec_time' in stat: continue # we'll test this further down
+        if '_proportion' in stat or 'nec_time' in stat: continue # we'll test this further down
         
         if stat in time_stats:
             assert gt_individual[stat] == pytest.approx(value, 0.1)

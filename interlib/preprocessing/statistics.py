@@ -470,13 +470,13 @@ class Statistics(BaseExtractor):
                     total_events -= ua_counter['USER_SET_VARIABLE']
 
                 # calculate relative frequency for each event
-                ua_relative_frequency = defaultdict(float)
+                user_actions_proportion = defaultdict(float)
                 for event, count in ua_counter.items():
-                    ua_relative_frequency[event + '_freq'] = safe_division(count, total_events) / 100
-                    # ua_relative_frequency[event + '_freq'] = (count / total_events) * 100 
+                    user_actions_proportion[event + '_proportion'] = safe_division(
+                        count, total_events) / 100
 
                 results[user].update(dict(ua_counter))
-                results[user].update(dict(ua_relative_frequency))
+                results[user].update(dict(user_actions_proportion))
                 results[user].update({'total_events': total_events})
                     
             return results 
